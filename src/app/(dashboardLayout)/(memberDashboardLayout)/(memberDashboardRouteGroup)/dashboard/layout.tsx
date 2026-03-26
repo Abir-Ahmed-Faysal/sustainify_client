@@ -8,9 +8,7 @@ export default function DashboardLayout({
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <main className="flex-grow p-6">
-        {children}
-      </main>
+      <main className="flex-grow p-6">{children}</main>
     </div>
   );
 }

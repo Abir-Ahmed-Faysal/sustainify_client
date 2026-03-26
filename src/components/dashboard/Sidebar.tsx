@@ -16,7 +16,7 @@ export default function Sidebar() {
   const [isOpenMobile, setIsOpenMobile] = useState(false);
 
   const menuItems = [
-    { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
+    { label: "Dashboard", icon: LayoutDashboard, href: "/profile" },
     { label: "Profile", icon: User, href: "/profile" },
   ];
 
