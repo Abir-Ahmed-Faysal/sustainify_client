@@ -1,8 +1,15 @@
+import HeroSection from "@/components/module/home/HeroSection";
+import FeaturedIdeas from "@/components/module/home/FeaturedIdeas";
+import Testimonials from "@/components/module/home/Testimonials";
+import Newsletter from "@/components/module/home/Newsletter";
+
 export default function Home() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-2">
-      <h1 className="text-4xl font-bold">Home Page</h1>
-      hello sadfas dfdf
+    <div className="flex flex-col w-full">
+      <HeroSection />
+      <FeaturedIdeas />
+      <Testimonials />
+      <Newsletter />
     </div>
   );
 }

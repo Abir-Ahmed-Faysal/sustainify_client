@@ -1,3 +1,6 @@
+import Navbar from "@/components/shared/Navbar";
+import Footer from "@/components/shared/Footer";
+
 export default function CommonLayout({
   children,
 }: {
@@ -5,9 +8,9 @@ export default function CommonLayout({
 }) {
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Navbar will go here */}
+      <Navbar />
       <main className="flex-grow">{children}</main>
-      {/* Footer will go here */}
+      <Footer />
     </div>
   );
 }

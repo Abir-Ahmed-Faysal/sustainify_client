@@ -1,7 +1,11 @@
-export default function LoginPage() {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-2">
-      <h1 className="text-4xl font-bold">Login</h1>
-    </div>
-  );
+import LoginForm from "@/components/module/auth/loginFrom";
+
+interface LoginParams {
+  searchParams: Promise<{ redirect?: string }>;
+}
+
+export default async function LoginPage({ searchParams }: LoginParams) {
+  const params = await searchParams;
+  const redirectPath = params.redirect;
+  return <LoginForm redirectPath={redirectPath} />;
 }
