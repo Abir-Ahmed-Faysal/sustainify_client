@@ -25,19 +25,21 @@ export const loginAction = async (payload: ILoginPayload, redirectPath?: string)
 
         const response = await httpClient.post<ILoginResponse>("/auth/login", parsedPayload.data);
 
-        const { accessToken, refreshToken, user } = response.data;
-        const { role, email } = user;
+        const { accessToken, sessionToken, refreshToken, user } = response.data as ILoginResponse;
+        const { role } = user;
+
         await setTokenInCookies("accessToken", accessToken);
         await setTokenInCookies("refreshToken", refreshToken);
 
-
-        if {
-            // redirect(redirectPath || "/dashboard");
-            const targetPath = redirectPath && isValidRedirectForRole(redirectPath, role as UserRole) ? redirectPath : getDefaultDashboardRoute(role as UserRole);
-
-
-            redirect(targetPath);
+        if (sessionToken) {
+            await setTokenInCookies("better-auth.session_token", sessionToken);
         }
+
+        const targetPath = redirectPath && isValidRedirectForRole(redirectPath, role as UserRole)
+            ? redirectPath
+            : getDefaultDashboardRoute(role as UserRole);
+
+        redirect(targetPath);
 
     } catch (error: any) {
         console.log(error, "error");
