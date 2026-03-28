@@ -3,15 +3,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { Button } from "@/components/ui/button";
-
-import { ILoginPayload, loginZodSchema } from "@/zod/auth.validation";
+import { IRegisterPayload, registerZodSchema } from "@/zod/auth.validation";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import AppSubmitButton from "./AppSubmitButton";
-import { loginAction } from "@/app/(commonLayout)/(authRoutGroup)/login/_action";
+import { registerAction } from "@/app/(commonLayout)/(authRoutGroup)/register/_action";
 import {
   Card,
   CardContent,
@@ -21,11 +20,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import AppField from "@/components/shared/AppField";
-import { toast } from "sonner";
 
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 
-interface LoginFormProps {
+interface RegisterFormProps {
   redirectPath?: string;
 }
 
@@ -47,29 +46,33 @@ const itemVariants = {
   },
 };
 
-const LoginForm = ({ redirectPath }: LoginFormProps) => {
+const RegisterForm = ({ redirectPath }: RegisterFormProps) => {
   const [serverError, setServerError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
   const { mutateAsync, isPending } = useMutation({
-    mutationFn: (payload: ILoginPayload) => loginAction(payload, redirectPath),
+    mutationFn: (payload: IRegisterPayload) =>
+      registerAction(payload, redirectPath),
   });
 
   const form = useForm({
     defaultValues: {
+      name: "",
       email: "",
       password: "",
     },
+
     onSubmit: async ({ value }) => {
       setServerError(null);
       try {
         const result = (await mutateAsync(value)) as any;
+
         if (!result.success) {
-          setServerError(result.message || "Login failed");
+          setServerError(result.message || "Registration failed");
           return;
         }
       } catch (error: any) {
-        setServerError(`Login failed: ${error.message}`);
+        setServerError(`Registration failed: ${error.message}`);
       }
     },
   });
@@ -85,10 +88,10 @@ const LoginForm = ({ redirectPath }: LoginFormProps) => {
         <CardHeader className="text-center pb-2">
           <motion.div variants={itemVariants}>
             <CardTitle className="text-3xl font-extrabold tracking-tight bg-gradient-to-br from-emerald-600 to-teal-800 bg-clip-text text-transparent">
-              Welcome Back
+              Join Sustainify
             </CardTitle>
             <CardDescription className="text-slate-500 dark:text-slate-400 mt-2">
-              Log in to continue your sustainable journey
+              Start your journey towards a greener future
             </CardDescription>
           </motion.div>
         </CardHeader>
@@ -106,8 +109,22 @@ const LoginForm = ({ redirectPath }: LoginFormProps) => {
           >
             <motion.div variants={itemVariants} className="space-y-4">
               <form.Field
+                name="name"
+                validators={{ onChange: registerZodSchema.shape.name }}
+              >
+                {(field) => (
+                  <AppField
+                    field={field}
+                    label="Full Name"
+                    type="text"
+                    placeholder="John Doe"
+                  />
+                )}
+              </form.Field>
+
+              <form.Field
                 name="email"
-                validators={{ onChange: loginZodSchema.shape.email }}
+                validators={{ onChange: registerZodSchema.shape.email }}
               >
                 {(field) => (
                   <AppField
@@ -121,7 +138,7 @@ const LoginForm = ({ redirectPath }: LoginFormProps) => {
 
               <form.Field
                 name="password"
-                validators={{ onChange: loginZodSchema.shape.password }}
+                validators={{ onChange: registerZodSchema.shape.password }}
               >
                 {(field) => (
                   <AppField
@@ -149,18 +166,12 @@ const LoginForm = ({ redirectPath }: LoginFormProps) => {
               </form.Field>
             </motion.div>
 
-            <motion.div variants={itemVariants} className="flex justify-end pt-1">
-              <Link
-                href="/forgot-password"
-                className="text-sm font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 hover:underline underline-offset-4"
-              >
-                Forgot password?
-              </Link>
-            </motion.div>
-
             {serverError && (
               <motion.div variants={itemVariants}>
-                <Alert variant={"destructive"} className="bg-destructive/10 text-destructive border-destructive/20">
+                <Alert
+                  variant={"destructive"}
+                  className="bg-destructive/10 text-destructive border-destructive/20"
+                >
                   <AlertDescription>{serverError}</AlertDescription>
                 </Alert>
               </motion.div>
@@ -173,11 +184,11 @@ const LoginForm = ({ redirectPath }: LoginFormProps) => {
                 {([canSubmit, isSubmitting]) => (
                   <AppSubmitButton
                     isPending={isSubmitting || isPending}
-                    pendingLabel="Authenticating..."
+                    pendingLabel="Creating Account..."
                     disabled={!canSubmit}
                     className="h-11 rounded-xl shadow-lg shadow-emerald-600/20 active:scale-[0.98] transition-all bg-emerald-600 hover:bg-emerald-700"
                   >
-                    Log In
+                    Register
                   </AppSubmitButton>
                 )}
               </form.Subscribe>
@@ -190,7 +201,7 @@ const LoginForm = ({ redirectPath }: LoginFormProps) => {
             </div>
             <div className="relative flex justify-center text-xs uppercase">
               <span className="px-3 bg-transparent backdrop-blur-sm text-slate-500 font-medium tracking-wider">
-                Or secure login with
+                Or sign up with
               </span>
             </div>
           </motion.div>
@@ -199,7 +210,9 @@ const LoginForm = ({ redirectPath }: LoginFormProps) => {
             <Button
               variant="outline"
               className="w-full h-11 rounded-xl border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors shadow-sm"
-              onClick={() => toast.error('Google Sign-in currently unavailable')}
+              onClick={() =>
+                toast.error("Google Sign-up currently unavailable")
+              }
             >
               <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
                 <path
@@ -225,13 +238,16 @@ const LoginForm = ({ redirectPath }: LoginFormProps) => {
         </CardContent>
 
         <CardFooter className="justify-center py-4 bg-slate-50/50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-800">
-          <motion.p variants={itemVariants} className="text-sm text-slate-600 dark:text-slate-400">
-            Don&apos;t have an account?{" "}
+          <motion.p
+            variants={itemVariants}
+            className="text-sm text-slate-600 dark:text-slate-400"
+          >
+            Already have an account?{" "}
             <Link
-              href={`/register${redirectPath ? `?redirect=${encodeURIComponent(redirectPath)}` : ""}`}
+              href={`/login${redirectPath ? `?redirect=${encodeURIComponent(redirectPath)}` : ""}`}
               className="text-emerald-600 dark:text-emerald-400 font-semibold hover:text-emerald-700 hover:underline underline-offset-4"
             >
-              Sign up today
+              Log In
             </Link>
           </motion.p>
         </CardFooter>
@@ -240,4 +256,4 @@ const LoginForm = ({ redirectPath }: LoginFormProps) => {
   );
 };
 
-export default LoginForm;
+export default RegisterForm;

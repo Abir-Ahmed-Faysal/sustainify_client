@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { envVars } from "@/config/env";
-import { ApiError, ApiResponse } from "@/Types/api.types";
+import { ApiError, ApiResponse } from "@/types/api.types";
 import axios, { AxiosInstance } from "axios";
 
 /* ---------------------------------- */

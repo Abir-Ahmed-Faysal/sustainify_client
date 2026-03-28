@@ -1,6 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
+import { getAuthCookieOptions } from "./tokenUtils";
 
 export const setCookie = async (
     name : string,
@@ -8,12 +9,10 @@ export const setCookie = async (
     maxAgeInSeconds : number,
 ) => {
     const cookieStore = await cookies();
+    const options = getAuthCookieOptions();
 
     cookieStore.set(name, value, {
-        httpOnly : true,
-        secure : true,
-        sameSite : "lax",
-        path : "/",
+        ...options,
         maxAge : maxAgeInSeconds,
     })
 }

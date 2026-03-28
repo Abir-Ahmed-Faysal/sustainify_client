@@ -1,0 +1,54 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use server";
+
+import { getDefaultDashboardRoute, isValidRedirectForRole, UserRole } from "@/lib/authUtils";
+import { httpClient } from "@/lib/axios/httpClient";
+import { setTokenInCookies } from "@/lib/tokenUtils";
+import { ApiError } from "@/types/api.types";
+import { ILoginResponse } from "@/types/auth.types";
+import { IRegisterPayload, registerZodSchema } from "@/zod/auth.validation";
+import { redirect } from "next/navigation";
+
+export const registerAction = async (payload: IRegisterPayload, redirectPath?: string): Promise<ILoginResponse | ApiError> => {
+    const parsedPayload = registerZodSchema.safeParse(payload);
+
+    if (!parsedPayload.success) {
+        const firstError = parsedPayload.error.issues[0].message || "Invalid input";
+        return {
+            success: false,
+            message: firstError,
+        }
+    }
+    try {
+        const response = await httpClient.post<ILoginResponse>("/auth/register", parsedPayload.data);
+
+        const { accessToken, refreshToken, user } = response.data as ILoginResponse;
+        const { role } = user;
+
+        await setTokenInCookies("accessToken", accessToken);
+        await setTokenInCookies("refreshToken", refreshToken);
+
+        const targetPath = redirectPath && isValidRedirectForRole(redirectPath, role as UserRole)
+            ? redirectPath
+            : getDefaultDashboardRoute(role as UserRole);
+
+        redirect(targetPath);
+
+    } catch (error: any) {
+        // Handle Next.js redirect errors correctly
+        if (error && typeof error === "object" && "digest" in error && typeof error.digest === "string" && error.digest.startsWith("NEXT_REDIRECT")) {
+            throw error;
+        }
+
+        return {
+            success: false,
+            message: `Registration failed: ${error.response?.data?.message || error.message || "Something went wrong"}`,
+        }
+    }
+
+    return {
+        success: false,
+        message: "An unexpected error occurred during registration.",
+    }
+}
+

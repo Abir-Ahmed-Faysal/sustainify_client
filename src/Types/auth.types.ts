@@ -1,11 +1,12 @@
+import { UserRole } from "@/lib/authUtils";
+
 export interface ILoginResponse {
     accessToken : string;
-    sessionToken : string;
     refreshToken : string;
     user : {
         email : string;
         name : string;
-        role : string;
+        role : UserRole;
         image: string;
         status : string;
         isDeleted : boolean;

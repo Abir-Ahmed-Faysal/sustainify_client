@@ -4,8 +4,8 @@
 import { getDefaultDashboardRoute, isValidRedirectForRole, UserRole } from "@/lib/authUtils";
 import { httpClient } from "@/lib/axios/httpClient";
 import { setTokenInCookies } from "@/lib/tokenUtils";
-import { ApiError } from "@/Types/api.types";
-import { ILoginResponse } from "@/Types/auth.types";
+import { ApiError } from "@/types/api.types";
+import { ILoginResponse } from "@/types/auth.types";
 
 
 import { ILoginPayload, loginZodSchema } from "@/zod/auth.validation";
@@ -22,18 +22,13 @@ export const loginAction = async (payload: ILoginPayload, redirectPath?: string)
         }
     }
     try {
-
         const response = await httpClient.post<ILoginResponse>("/auth/login", parsedPayload.data);
 
-        const { accessToken, sessionToken, refreshToken, user } = response.data as ILoginResponse;
+        const { accessToken, refreshToken, user } = response.data as ILoginResponse;
         const { role } = user;
 
         await setTokenInCookies("accessToken", accessToken);
         await setTokenInCookies("refreshToken", refreshToken);
-
-        if (sessionToken) {
-            await setTokenInCookies("better-auth.session_token", sessionToken);
-        }
 
         const targetPath = redirectPath && isValidRedirectForRole(redirectPath, role as UserRole)
             ? redirectPath
@@ -42,17 +37,20 @@ export const loginAction = async (payload: ILoginPayload, redirectPath?: string)
         redirect(targetPath);
 
     } catch (error: any) {
-        console.log(error, "error");
+        // Handle Next.js redirect errors correctly
         if (error && typeof error === "object" && "digest" in error && typeof error.digest === "string" && error.digest.startsWith("NEXT_REDIRECT")) {
             throw error;
         }
 
-        if (error && error.response && error.response.data.message === "Email not verified") {
-            redirect(`/verify-email?email=${payload.email}`);
-        }
         return {
             success: false,
-            message: `Login failed: ${error.message}`,
+            message: `Login failed: ${error.response?.data?.message || error.message || "Something went wrong"}`,
         }
     }
+
+    return {
+        success: false,
+        message: "An unexpected error occurred during login.",
+    }
 }
+

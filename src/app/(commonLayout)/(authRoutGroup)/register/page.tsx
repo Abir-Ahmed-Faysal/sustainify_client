@@ -1,7 +1,11 @@
-export default function RegisterPage() {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-2">
-      <h1 className="text-4xl font-bold">Register</h1>
-    </div>
-  );
+import RegisterForm from "@/components/module/auth/registerFrom";
+
+interface RegisterParams {
+  searchParams: Promise<{ redirect?: string }>;
+}
+
+export default async function RegisterPage({ searchParams }: RegisterParams) {
+  const params = await searchParams;
+  const redirectPath = params.redirect;
+  return <RegisterForm redirectPath={redirectPath} />;
 }
