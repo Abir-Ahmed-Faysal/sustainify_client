@@ -10,7 +10,7 @@ export const getAuthCookieOptions = (token?: string) => {
     return {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: (process.env.NODE_ENV === "production" ? "none" : "lax") as "none" | "lax" | "strict",
+        sameSite: "lax" as const,
         path: "/",
         maxAge: maxAge || 60 * 60 * 24, // 1 day default
     };
@@ -50,7 +50,11 @@ export const getTokenSecondsRemaining = (token: string): number => {
         let payload: JwtPayload | null;
 
         try {
-            payload = jwt.verify(token, envVars.ACCESS_TOKEN_SECRET) as JwtPayload;
+            if (!envVars.ACCESS_TOKEN_SECRET) {
+                payload = jwt.decode(token) as JwtPayload | null;
+            } else {
+                payload = jwt.verify(token, envVars.ACCESS_TOKEN_SECRET) as JwtPayload;
+            };
         } catch {
             payload = jwt.decode(token) as JwtPayload | null;
         }

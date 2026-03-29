@@ -17,7 +17,7 @@ const IdeaDetailsPage = async ({ params }: IdeaDetailsPageProps) => {
   const { id } = await params;
   const currentUser = await getUserInfo();
 
-  let idea: IIdea | null = null;
+  let idea: IIdea | null | undefined = null;
   let errorMessage = "";
 
   try {
@@ -139,7 +139,7 @@ const IdeaDetailsPage = async ({ params }: IdeaDetailsPageProps) => {
 
               <div className="mt-6 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
                 <p className="text-sm text-slate-600 dark:text-slate-400">
-                  By purchasing, you'll get immediate access to the complete idea, including full problem statement, solution details, and community insights.
+                  By purchasing, you`&apos;`ll get immediate access to the complete idea, including full problem statement, solution details, and community insights.
                 </p>
               </div>
             </div>

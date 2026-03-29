@@ -50,6 +50,7 @@ const itemVariants = {
 const LoginForm = ({ redirectPath }: LoginFormProps) => {
   const [serverError, setServerError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
 
   const { mutateAsync, isPending } = useMutation({
     mutationFn: (payload: ILoginPayload) => loginAction(payload, redirectPath),
@@ -68,7 +69,14 @@ const LoginForm = ({ redirectPath }: LoginFormProps) => {
           setServerError(result.message || "Login failed");
           return;
         }
+        // If no error returned, redirect is happening - show loading state
+        setRedirecting(true);
       } catch (error: any) {
+        // Ignore Next.js redirect errors - they're expected and not real errors
+        if (error?.message === "NEXT_REDIRECT" || error?.digest?.startsWith("NEXT_REDIRECT")) {
+          setRedirecting(true);
+          return;
+        }
         setServerError(`Login failed: ${error.message}`);
       }
     },
@@ -79,7 +87,7 @@ const LoginForm = ({ redirectPath }: LoginFormProps) => {
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="w-full"
+      className="w-full relative"
     >
       <Card className="glass border-none shadow-xl overflow-hidden">
         <CardHeader className="text-center pb-2">
@@ -115,6 +123,7 @@ const LoginForm = ({ redirectPath }: LoginFormProps) => {
                     label="Email Address"
                     type="email"
                     placeholder="name@example.com"
+                    disabled={redirecting}
                   />
                 )}
               </form.Field>
@@ -129,6 +138,7 @@ const LoginForm = ({ redirectPath }: LoginFormProps) => {
                     label="Password"
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
+                    disabled={redirecting}
                     append={
                       <Button
                         type="button"
@@ -136,6 +146,7 @@ const LoginForm = ({ redirectPath }: LoginFormProps) => {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 hover:bg-emerald-100 dark:hover:bg-emerald-900/30"
+                        disabled={redirecting}
                       >
                         {showPassword ? (
                           <EyeOff className="size-4 text-slate-500" />
@@ -149,16 +160,7 @@ const LoginForm = ({ redirectPath }: LoginFormProps) => {
               </form.Field>
             </motion.div>
 
-            <motion.div variants={itemVariants} className="flex justify-end pt-1">
-              <Link
-                href="/forgot-password"
-                className="text-sm font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 hover:underline underline-offset-4"
-              >
-                Forgot password?
-              </Link>
-            </motion.div>
-
-            {serverError && (
+            {serverError && !redirecting && (
               <motion.div variants={itemVariants}>
                 <Alert variant={"destructive"} className="bg-destructive/10 text-destructive border-destructive/20">
                   <AlertDescription>{serverError}</AlertDescription>
@@ -172,9 +174,9 @@ const LoginForm = ({ redirectPath }: LoginFormProps) => {
               >
                 {([canSubmit, isSubmitting]) => (
                   <AppSubmitButton
-                    isPending={isSubmitting || isPending}
-                    pendingLabel="Authenticating..."
-                    disabled={!canSubmit}
+                    isPending={isSubmitting || isPending || redirecting}
+                    pendingLabel={redirecting ? "Redirecting..." : "Authenticating..."}
+                    disabled={!canSubmit || redirecting}
                     className="h-11 rounded-xl shadow-lg shadow-emerald-600/20 active:scale-[0.98] transition-all bg-emerald-600 hover:bg-emerald-700"
                   >
                     Log In
@@ -236,6 +238,19 @@ const LoginForm = ({ redirectPath }: LoginFormProps) => {
           </motion.p>
         </CardFooter>
       </Card>
+
+      {/* Loading overlay during redirect */}
+      {redirecting && (
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm rounded-lg flex items-center justify-center z-50">
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative w-12 h-12">
+              <div className="absolute inset-0 border-4 border-emerald-200/30 rounded-full"></div>
+              <div className="absolute inset-0 border-4 border-transparent border-t-emerald-500 rounded-full animate-spin"></div>
+            </div>
+            <p className="text-sm font-medium text-white">Redirecting to dashboard...</p>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 };

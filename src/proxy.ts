@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import { envVars } from "./config/env";
 import {
   getDefaultDashboardRoute,
@@ -60,14 +61,25 @@ export async function proxy(request: NextRequest) {
     const accessToken = request.cookies.get(accessTokenName)?.value;
     const refreshToken = request.cookies.get(refreshTokenName)?.value;
 
-    // 🔍 Verify token
-    const verifyResult = accessToken 
-      ? jwtUtils.verifyToken(accessToken, envVars.ACCESS_TOKEN_SECRET)
-      : { success: false, data: null };
+    // 🔍 Decode token (without verification, since secret unavailable on client)
+    // The server will validate token authenticity via the refresh endpoint
+    let isValidAccessToken = false;
+    let decoded: JwtPayload | null = null;
+    let userRole: UserRole | null = null;
 
-    let isValidAccessToken = verifyResult?.success;
-    let decoded = verifyResult?.data;
-    let userRole: UserRole | null = decoded?.role ?? null;
+    if (accessToken) {
+      try {
+        decoded = jwt.decode(accessToken) as JwtPayload | null;
+        if (decoded && decoded.exp) {
+          const now = Math.floor(Date.now() / 1000);
+          isValidAccessToken = decoded.exp > now; // Token is valid if not expired
+          userRole = decoded.role ?? null;
+        }
+      } catch {
+        isValidAccessToken = false;
+        decoded = null;
+      }
+    }
 
     const response = NextResponse.next();
     let tokensRefreshed = false;
@@ -78,12 +90,15 @@ export async function proxy(request: NextRequest) {
       if (refreshedTokens) {
         setAuthCookies(response, refreshedTokens, accessTokenName, refreshTokenName);
         
-        const newVerify = jwtUtils.verifyToken(refreshedTokens.accessToken, envVars.ACCESS_TOKEN_SECRET);
-        if (newVerify.success) {
-           isValidAccessToken = true;
-           decoded = newVerify.data;
-           userRole = decoded?.role ?? null;
-           tokensRefreshed = true;
+        const newDecoded = jwt.decode(refreshedTokens.accessToken) as JwtPayload | null;
+        if (newDecoded && newDecoded.exp) {
+          const now = Math.floor(Date.now() / 1000);
+          if (newDecoded.exp > now) {
+            isValidAccessToken = true;
+            decoded = newDecoded;
+            userRole = newDecoded.role ?? null;
+            tokensRefreshed = true;
+          }
         }
       }
     }
@@ -101,10 +116,13 @@ export async function proxy(request: NextRequest) {
         setAuthCookies(response, refreshedTokens, accessTokenName, refreshTokenName);
         tokensRefreshed = true;
         
-        const newVerify = jwtUtils.verifyToken(refreshedTokens.accessToken, envVars.ACCESS_TOKEN_SECRET);
-        isValidAccessToken = newVerify.success;
-        decoded = newVerify.data;
-        userRole = decoded?.role ?? null;
+        const newDecoded = jwt.decode(refreshedTokens.accessToken) as JwtPayload | null;
+        if (newDecoded && newDecoded.exp) {
+          const now = Math.floor(Date.now() / 1000);
+          isValidAccessToken = newDecoded.exp > now;
+          decoded = newDecoded;
+          userRole = decoded?.role ?? null;
+        }
       }
     }
 

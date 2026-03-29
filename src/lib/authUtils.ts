@@ -1,6 +1,6 @@
 export type UserRole = "ADMIN" | "MEMBER";
 
-export const authRoutes = ["/login", "/register", "/forgot-password", "/reset-password", "/verify-email"];
+export const authRoutes = ["/login", "/register"];
 
 export const isAuthRoute = (pathname: string) => {
     return authRoutes.some((router: string) => router === pathname);
@@ -46,7 +46,7 @@ export const getRouteOwner = (pathname : string) : "ADMIN"  | "MEMBER" | "COMMON
         return "COMMON";
     }
 
-    return null; // public route
+    return null; 
 }
 
 export const isValidRedirectForRole = (redirectPath : string, role : UserRole) => {

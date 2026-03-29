@@ -35,8 +35,8 @@ export const registerAction = async (payload: IRegisterPayload, redirectPath?: s
         redirect(targetPath);
 
     } catch (error: any) {
-        // Handle Next.js redirect errors correctly
-        if (error && typeof error === "object" && "digest" in error && typeof error.digest === "string" && error.digest.startsWith("NEXT_REDIRECT")) {
+        // Handle Next.js redirect errors correctly - re-throw immediately
+        if (error?.message === "NEXT_REDIRECT" || error?.digest?.startsWith("NEXT_REDIRECT")) {
             throw error;
         }
 
