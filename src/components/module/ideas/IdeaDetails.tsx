@@ -134,6 +134,24 @@ export default function IdeaDetails({
               {idea.problemStatement}
             </p>
           </section>
+
+          {/* Solution Section */}
+          <section className="mb-8">
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Proposed Solution</h2>
+            <p className="text-lg text-slate-700 dark:text-slate-300 leading-relaxed">
+              {idea.solution || "No solution details provided"}
+            </p>
+          </section>
+
+          {/* Description Section */}
+          {idea.description && (
+            <section className="mb-8">
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">More Details</h2>
+              <p className="text-lg text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
+                {idea.description}
+              </p>
+            </section>
+          )}
         </div>
 
         {/* Sidebar */}

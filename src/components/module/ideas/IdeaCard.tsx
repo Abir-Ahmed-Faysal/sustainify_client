@@ -29,7 +29,7 @@ export default function IdeaCard({ idea }: IdeaCardProps) {
                         className="object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                 ) : (
-                    <div className={`flex items-center justify-center h-full bg-gradient-to-br ${placeholderGradient} group-hover:scale-110 transition-transform duration-500`}>
+                    <div className={`flex items-center justify-center h-full bg-linear-to-br ${placeholderGradient} group-hover:scale-110 transition-transform duration-500`}>
                         <div className="text-center">
                             <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{category.name}</p>
                         </div>
