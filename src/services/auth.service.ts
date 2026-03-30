@@ -65,42 +65,33 @@ export async function getNewTokensWithRefreshToken(
 
 
 export async function getUserInfo() {
-
     try {
-        const cookieStore = await cookies()
-
-        const accessToken = cookieStore.get("accessToken")?.value || cookieStore.get("__accessToken")?.value
-
-        const refreshToken = cookieStore.get("refreshToken")?.value || cookieStore.get("__refreshToken")?.value
-
+        const cookieStore = await cookies();
+        const accessToken = cookieStore.get("accessToken")?.value;
+        const refreshToken = cookieStore.get("refreshToken")?.value
 
         if (!accessToken) {
             return null;
         }
 
-
         const res = await fetch(`${NEXT_PUBLIC_API_BASE_URL}/auth/me`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
-                Cookie: `accessToken=${accessToken}`
+                Cookie: `accessToken=${accessToken}; refreshToken=${refreshToken}`
             }
-        })
+        });
 
         if (!res.ok) {
+            console.error("Failed to fetch user info:", res.status, res.statusText);
             return null;
         }
 
         const { data } = await res.json();
 
         return data;
-
-
-
-    } catch (error: any) {
+    } catch (error) {
         console.error("Error fetching user info:", error);
         return null;
     }
-
-
 }

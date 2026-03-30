@@ -30,3 +30,23 @@ export const prefetchIdeas = async (filters: IIdeaQuery = {}): Promise<ApiRespon
 
     return res.json();
 };
+
+// CREATE: Create a new idea
+export const createIdea = async (payload: any): Promise<ApiResponse<IIdea>> => {
+    return httpClient.post<IIdea>("/ideas", payload);
+};
+
+// UPDATE: Update an existing idea
+export const updateIdea = async (id: string, payload: any): Promise<ApiResponse<IIdea>> => {
+    return httpClient.put<IIdea>(`/ideas/${id}`, payload);
+};
+
+// DELETE: Delete an idea
+export const deleteIdea = async (id: string): Promise<ApiResponse<{ message: string }>> => {
+    return httpClient.delete<{ message: string }>(`/ideas/${id}`);
+};
+
+// GET: Get current user's ideas
+export const getMyIdeas = async (): Promise<ApiResponse<IIdea[]>> => {
+    return httpClient.get<IIdea[]>("/ideas/my-ideas");
+};
