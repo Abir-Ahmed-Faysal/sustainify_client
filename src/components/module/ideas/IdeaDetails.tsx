@@ -8,6 +8,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, Heart, ThumbsDown, ThumbsUp, Lock } from "lucide-react";
 import { isValidImageUrl, getPlaceholderGradient } from "@/lib/imageUtils";
+import FavouriteButton from "./FavouriteButton";
 
 interface IdeaDetailsProps {
   idea: IIdea;
@@ -18,6 +19,7 @@ interface IdeaDetailsProps {
   onUpvote: () => void;
   onDownvote: () => void;
   onRemoveVote: () => void;
+  isFavourited?: boolean;
   userHasAccess?: boolean; // For paid ideas
 }
 
@@ -63,6 +65,7 @@ export default function IdeaDetails({
   onUpvote,
   onDownvote,
   onRemoveVote,
+  isFavourited = false,
 }: IdeaDetailsProps) {
   const isValidImage = isValidImageUrl(idea.image);
   const placeholderGradient = getPlaceholderGradient(idea.title);
@@ -192,6 +195,12 @@ export default function IdeaDetails({
                   <ThumbsDown className="w-4 h-4" />
                   Downvote {hasUserDownvoted && "✓"}
                 </Button>
+                <FavouriteButton
+                  ideaId={idea.id}
+                  isFavourited={isFavourited}
+                  isAuthenticated={!!currentUserId}
+                  showLabel
+                />
               </div>
             ) : (
               <p className="text-sm text-slate-600 dark:text-slate-400 text-center py-4 bg-slate-100 dark:bg-slate-700 rounded-lg">

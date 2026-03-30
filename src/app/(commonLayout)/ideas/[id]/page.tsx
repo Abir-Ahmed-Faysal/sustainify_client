@@ -1,7 +1,7 @@
 import { getIdeaById } from "@/services/idea.service";
 import { getUserInfo } from "@/services/auth.service";
 import { checkIdeaAccess } from "@/services/access.service";
-import IdeaDetails from "@/components/module/ideas/IdeaDetails";
+import IdeaDetailsClient from "@/components/module/ideas/IdeaDetailsClient";
 import PaidIdeaAccess from "@/components/module/ideas/PaidIdeaAccess";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -153,32 +153,11 @@ const IdeaDetailsPage = async ({ params }: IdeaDetailsPageProps) => {
   const hasUserUpvoted = currentUser ? idea.totalUpVotes > 0 : false;
   const hasUserDownvoted = currentUser ? idea.totalDownVotes > 0 : false;
 
-  // Voting handlers (client-side would handle these)
-  const handleUpvote = () => {
-    // This would be handled by a client component
-    console.log("Upvote");
-  };
-
-  const handleDownvote = () => {
-    // This would be handled by a client component
-    console.log("Downvote");
-  };
-
-  const handleRemoveVote = () => {
-    // This would be handled by a client component
-    console.log("Remove vote");
-  };
-
   return (
-    <IdeaDetails
+    <IdeaDetailsClient
       idea={idea}
       isAuthor={isAuthor}
       currentUserId={currentUser?._id}
-      hasUserUpvoted={hasUserUpvoted}
-      hasUserDownvoted={hasUserDownvoted}
-      onUpvote={handleUpvote}
-      onDownvote={handleDownvote}
-      onRemoveVote={handleRemoveVote}
     />
   );
 };

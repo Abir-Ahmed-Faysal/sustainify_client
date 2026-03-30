@@ -7,6 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { format } from "date-fns";
 import { isValidImageUrl, getPlaceholderGradient } from "@/lib/imageUtils";
+import IdeaCardFavourite from "./IdeaCardFavourite";
 
 interface IdeaCardProps {
     idea: IIdea;
@@ -71,7 +72,7 @@ export default function IdeaCard({ idea }: IdeaCardProps) {
                 </p>
             </CardContent>
 
-            <CardFooter className="p-5 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <CardFooter className="p-5 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
                         <Star className="size-5 fill-current" />
@@ -83,11 +84,14 @@ export default function IdeaCard({ idea }: IdeaCardProps) {
                     </div>
                 </div>
                 
-                <Button size="sm" asChild variant="ghost" className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 group/btn">
-                    <Link href={`/ideas/${id}`} className="flex items-center gap-1">
-                        View Details <Eye className="size-4 group-hover/btn:scale-110 transition-transform" />
-                    </Link>
-                </Button>
+                <div className="flex items-center gap-2">
+                    <IdeaCardFavourite ideaId={id} />
+                    <Button size="sm" asChild variant="ghost" className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 group/btn">
+                        <Link href={`/ideas/${id}`} className="flex items-center gap-1">
+                            View Details <Eye className="size-4 group-hover/btn:scale-110 transition-transform" />
+                        </Link>
+                    </Button>
+                </div>
             </CardFooter>
         </Card>
     );

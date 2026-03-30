@@ -50,3 +50,18 @@ export const deleteIdea = async (id: string): Promise<ApiResponse<{ message: str
 export const getMyIdeas = async (): Promise<ApiResponse<IIdea[]>> => {
     return httpClient.get<IIdea[]>("/ideas/my-ideas");
 };
+
+// VOTING: Upvote an idea
+export const upvoteIdea = async (ideaId: string): Promise<ApiResponse<any>> => {
+    return httpClient.post("/votes", { ideaId, voteType: "UPVOTE" });
+};
+
+// VOTING: Downvote an idea
+export const downvoteIdea = async (ideaId: string): Promise<ApiResponse<any>> => {
+    return httpClient.post("/votes", { ideaId, voteType: "DOWNVOTE" });
+};
+
+// VOTING: Remove vote from an idea
+export const removeVote = async (ideaId: string): Promise<ApiResponse<any>> => {
+    return httpClient.delete(`/votes/${ideaId}`);
+};
