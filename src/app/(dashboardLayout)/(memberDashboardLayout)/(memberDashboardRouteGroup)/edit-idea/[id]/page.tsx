@@ -2,21 +2,27 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createIdea } from "@/services/idea.service";
+import { updateIdea, getIdeaById } from "@/services/idea.service";
 import { getCategories } from "@/services/category.service";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { ICategory } from "@/types/category.types";
+import { IIdea } from "@/types/idea.types";
 
-export default function CreateIdeaPage() {
+export default function EditIdeaPage() {
     const router = useRouter();
+    const params = useParams();
+    const ideaId = params.id as string;
+
     const [isLoading, setIsLoading] = useState(false);
+    const [isFetching, setIsFetching] = useState(true);
     const [isFetchingCategories, setIsFetchingCategories] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [categories, setCategories] = useState<ICategory[]>([]);
+    const [idea, setIdea] = useState<IIdea | null>(null);
     const [formData, setFormData] = useState({
         title: "",
         problemStatement: "",
@@ -28,23 +34,55 @@ export default function CreateIdeaPage() {
         image: ""
     });
 
+    // Fetch idea and categories
     useEffect(() => {
-        const fetchCategories = async () => {
+        const fetchData = async () => {
             try {
-                const response = await getCategories();
-                if (response.data) {
-                    setCategories(response.data);
+                setIsFetching(true);
+                const [ideaResponse, categoriesResponse] = await Promise.all([
+                    getIdeaById(ideaId),
+                    getCategories()
+                ]);
+
+                if (ideaResponse.data) {
+                    const ideaData = ideaResponse.data;
+                    setIdea(ideaData);
+                    
+                    // Check if idea is approved (can't edit approved ideas)
+                    if (ideaData.status === "APPROVED") {
+                        setError("You cannot edit an approved idea");
+                        router.push("/dashboard/my-ideas");
+                        return;
+                    }
+
+                    setFormData({
+                        title: ideaData.title,
+                        problemStatement: ideaData.problemStatement,
+                        solution: ideaData.solution || "",
+                        description: ideaData.description,
+                        categoryId: ideaData.categoryId,
+                        isPaid: ideaData.isPaid || false,
+                        price: ideaData.price || 0,
+                        image: ideaData.image || ""
+                    });
+                }
+
+                if (categoriesResponse.data) {
+                    setCategories(categoriesResponse.data);
                 }
             } catch (err) {
-                console.error("Error fetching categories:", err);
-                setError("Failed to load categories");
+                console.error("Error fetching data:", err);
+                setError("Failed to load idea or categories");
             } finally {
+                setIsFetching(false);
                 setIsFetchingCategories(false);
             }
         };
 
-        fetchCategories();
-    }, []);
+        if (ideaId) {
+            fetchData();
+        }
+    }, [ideaId, router]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
@@ -60,24 +98,43 @@ export default function CreateIdeaPage() {
         setIsLoading(true);
 
         try {
-            const response = await createIdea(formData);
+            const response = await updateIdea(ideaId, formData);
             if (response.data) {
-                alert("Idea created successfully!");
+                alert("Idea updated successfully!");
                 router.push("/dashboard/my-ideas");
             }
         } catch (err: any) {
-            console.error("Error creating idea:", err);
-            setError(err.message || "Failed to create idea. Please try again.");
+            console.error("Error updating idea:", err);
+            setError(err.message || "Failed to update idea. Please try again.");
         } finally {
             setIsLoading(false);
         }
     };
 
+    if (isFetching) {
+        return (
+            <div className="container mx-auto px-4 md:px-6 py-8 max-w-2xl">
+                <div className="flex items-center justify-center h-64">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="container mx-auto px-4 md:px-6 py-8 max-w-2xl">
             <div className="mb-8">
-                <h1 className="text-3xl font-bold text-slate-900 mb-2">Create New Idea</h1>
-                <p className="text-slate-600">Share your sustainability solution with the community</p>
+                <h1 className="text-3xl font-bold text-slate-900 mb-2">Edit Idea</h1>
+                <p className="text-slate-600">Update your sustainability idea</p>
+                {idea && (
+                    <p className="text-sm text-slate-500 mt-2">
+                        Current Status: <span className={`font-semibold ${
+                            idea.status === "APPROVED" ? "text-green-600" :
+                            idea.status === "REJECTED" ? "text-red-600" :
+                            "text-yellow-600"
+                        }`}>{idea.status}</span>
+                    </p>
+                )}
             </div>
 
             <Card className="p-8">
@@ -229,10 +286,10 @@ export default function CreateIdeaPage() {
                             {isLoading ? (
                                 <>
                                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    Creating...
+                                    Updating...
                                 </>
                             ) : (
-                                "Create Idea"
+                                "Update Idea"
                             )}
                         </Button>
                         <Button 

@@ -5,18 +5,18 @@ import { ApiResponse } from "@/types/api.types";
 
 // Get user profile (client-side)
 export const getUserProfile = async (): Promise<ApiResponse<UserProfile>> => {
-    return httpClient.get<UserProfile>("/users/profile");
+    return httpClient.get<UserProfile>("/profile");
 };
 
 // Update user profile (client-side)
 export const updateUserProfile = async (payload: Partial<UserProfile>): Promise<ApiResponse<UserProfile>> => {
-    return httpClient.put<UserProfile>("/users/profile", payload);
+    return httpClient.patch<UserProfile>("/profile", payload);
 };
 
 // For Server Component Prefetching (Node.js fetch)
 export const prefetchUserProfile = async (accessToken: string): Promise<ApiResponse<UserProfile>> => {
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-    const url = `${baseUrl}/users/profile`;
+    const url = `${baseUrl}/profile`;
 
     try {
         const res = await fetch(url, {

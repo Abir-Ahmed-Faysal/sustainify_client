@@ -38,7 +38,7 @@ export const createIdea = async (payload: any): Promise<ApiResponse<IIdea>> => {
 
 // UPDATE: Update an existing idea
 export const updateIdea = async (id: string, payload: any): Promise<ApiResponse<IIdea>> => {
-    return httpClient.put<IIdea>(`/ideas/${id}`, payload);
+    return httpClient.patch<IIdea>(`/ideas/${id}`, payload);
 };
 
 // DELETE: Delete an idea
