@@ -5,6 +5,8 @@ export interface IIdea {
     id: string;
     title: string;
     problemStatement: string;
+    solution: string;
+    description: string;
     image: string;
     isPaid: boolean;
     price?: number;
@@ -28,6 +30,7 @@ export interface IIdea {
         name: string;
         image: string | null;
     };
+    categoryId: string;
     _count: {
         comments: number;
         votes: number;
