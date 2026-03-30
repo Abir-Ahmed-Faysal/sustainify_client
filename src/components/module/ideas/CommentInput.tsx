@@ -47,7 +47,7 @@ export default function CommentInput({
       <Textarea
         placeholder="Share your thoughts..."
         value={content}
-        onChange={(e) => {
+        onChange={(e:React.ChangeEvent<HTMLTextAreaElement>) => {
           setContent(e.target.value);
           if (error) setError(null);
         }}
