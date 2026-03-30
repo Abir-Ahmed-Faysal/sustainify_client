@@ -59,8 +59,8 @@ export default function EditIdeaPage() {
                         title: ideaData.title,
                         problemStatement: ideaData.problemStatement,
                         solution: ideaData.solution || "",
-                        description: ideaData.description,
-                        categoryId: ideaData.categoryId,
+                        description: ideaData.description || "",
+                        categoryId: ideaData.category.id,
                         isPaid: ideaData.isPaid || false,
                         price: ideaData.price || 0,
                         image: ideaData.image || ""
