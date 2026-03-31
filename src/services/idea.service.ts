@@ -6,12 +6,27 @@ import { IIdea, IIdeaQuery } from "@/types/idea.types";
 import { ApiResponse } from "@/types/api.types";
 import { cookies } from "next/headers";
 
-export const getIdeas = async (filters: IIdeaQuery = {}): Promise<ApiResponse<IIdea[]>> => {
-    const params: IIdeaQuery = { ...filters };
 
-    // axios handles params serialization
-    return httpClient.get<IIdea[]>("/ideas", { params: params as Record<string, any> });
+
+
+
+export const adminDashboardIdeas = async (filters: IIdeaQuery = {}): Promise<ApiResponse<IIdea[]>> => {
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+    const queryString = new URLSearchParams(filters as Record<string, string>).toString();
+    const url = `${baseUrl}/ideas?${queryString}`;
+
+    const res = await fetch(url, {
+
+        next: { revalidate: 60 }
+    });
+
+    if (!res.ok) {
+        throw new Error("Failed to prefetch ideas");
+    }
+
+    return res.json();
 };
+
 
 
 

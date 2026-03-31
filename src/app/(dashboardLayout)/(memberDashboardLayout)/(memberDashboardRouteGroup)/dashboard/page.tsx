@@ -124,7 +124,7 @@ export default function MemberDashboardPage() {
             <h2 className="text-2xl font-bold text-slate-900 mb-4">Recent Ideas</h2>
             {recentIdeas.length === 0 ? (
               <Card className="p-8 text-center">
-                <p className="text-slate-600 mb-4">You haven't created any ideas yet</p>
+                <p className="text-slate-600 mb-4">You haven`&apos;`t created any ideas yet</p>
                 <Link href="/dashboard/create-idea">
                   <Button>Create Your First Idea</Button>
                 </Link>

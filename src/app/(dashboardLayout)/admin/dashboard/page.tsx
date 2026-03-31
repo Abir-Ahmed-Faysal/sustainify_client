@@ -3,22 +3,23 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { getIdeas } from "@/services/idea.service";
 import Link from "next/link";
-import { BarChart3, Users, FileText, Eye, Filter, AlertCircle } from "lucide-react";
+import {
+  BarChart3,
+  Users,
+  FileText,
+  Eye,
+  Filter,
+  AlertCircle,
+} from "lucide-react";
 import { IIdea } from "@/types/idea.types";
-
-interface DashboardStats {
-  totalIdeas: number;
-  underReview: number;
-  approved: number;
-  rejected: number;
-  paidIdeas: number;
-}
+import { getStats } from "@/services/stats.service";
+import { adminDashboardIdeas } from "@/services/idea.service";
+import { DashboardStats } from "@/types/stats.types";
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<DashboardStats>({
-    totalIdeas: 0,
+    totalIdea: 0,
     underReview: 0,
     approved: 0,
     rejected: 0,
@@ -31,29 +32,26 @@ export default function AdminDashboardPage() {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const response = await getIdeas({ limit: 100 });
-        const ideas = response.data || [];
 
-        // Calculate stats
-        const totalIdeas = ideas.length;
-        const underReview = ideas.filter(
-          (i) => i.status === "UNDER_REVIEW"
-        ).length;
-        const approved = ideas.filter((i) => i.status === "APPROVED").length;
-        const rejected = ideas.filter((i) => i.status === "REJECTED").length;
-        const paidIdeas = ideas.filter((i) => i.isPaid).length;
+        const [statsResponse, recent] = await Promise.all([
+          getStats(),
+          adminDashboardIdeas({ limit: 5, sortOrder: "desc" }),
+        ]);
 
-        setStats({
-          totalIdeas,
-          underReview,
-          approved,
-          rejected,
-          paidIdeas,
-        });
+        const backendStats = statsResponse.data;
 
-        // Get recent ideas
-        const recent = ideas.slice(0, 5);
-        setRecentIdeas(recent);
+        // Map backend stats safely to DashboardStats
+        const mappedStats: DashboardStats = {
+          totalIdea: backendStats?.totalIdea ?? 0,
+          underReview: backendStats?.underReview ?? 0,
+          approved: backendStats?.approved ?? 0,
+          rejected: backendStats?.rejected ?? 0,
+          paidIdeas: backendStats?.paidIdeas ?? 0,
+        };
+
+        setStats(mappedStats);
+
+        setRecentIdeas(recent.data || []);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
       } finally {
@@ -117,13 +115,12 @@ export default function AdminDashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <StatCard
           title="Total Ideas"
-          value={stats.totalIdeas}
+          value={stats.totalIdea}
           icon={<FileText className="w-5 h-5 text-blue-600" />}
           bgColor="bg-blue-50 dark:bg-blue-900/20"
           textColor="bg-blue-100 dark:bg-blue-900/40"
           href="/admin/dashboard/ideas?status=all"
         />
-
         <StatCard
           title="Under Review"
           value={stats.underReview}
@@ -132,7 +129,6 @@ export default function AdminDashboardPage() {
           textColor="bg-yellow-100 dark:bg-yellow-900/40"
           href="/admin/dashboard/ideas?status=under-review"
         />
-
         <StatCard
           title="Approved"
           value={stats.approved}
@@ -141,7 +137,6 @@ export default function AdminDashboardPage() {
           textColor="bg-green-100 dark:bg-green-900/40"
           href="/admin/dashboard/ideas?status=approved"
         />
-
         <StatCard
           title="Rejected"
           value={stats.rejected}
@@ -150,7 +145,6 @@ export default function AdminDashboardPage() {
           textColor="bg-red-100 dark:bg-red-900/40"
           href="/admin/dashboard/ideas?status=rejected"
         />
-
         <StatCard
           title="Paid Ideas"
           value={stats.paidIdeas}
@@ -159,44 +153,6 @@ export default function AdminDashboardPage() {
           textColor="bg-purple-100 dark:bg-purple-900/40"
         />
       </div>
-
-      {/* Quick Actions */}
-      <Card className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700">
-        <CardHeader>
-          <CardTitle className="text-lg">Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-            <Button asChild variant="outline" className="w-full gap-2">
-              <Link href="/admin/dashboard/ideas?status=under-review">
-                <AlertCircle className="w-4 h-4" />
-                Review Ideas
-              </Link>
-            </Button>
-
-            <Button asChild variant="outline" className="w-full gap-2">
-              <Link href="/admin/dashboard/members">
-                <Users className="w-4 h-4" />
-                Manage Members
-              </Link>
-            </Button>
-
-            <Button asChild variant="outline" className="w-full gap-2">
-              <Link href="/admin/dashboard/ideas?status=approved">
-                <Eye className="w-4 h-4" />
-                View Approved
-              </Link>
-            </Button>
-
-            <Button asChild variant="outline" className="w-full gap-2">
-              <Link href="/admin/dashboard/ideas?status=rejected">
-                <Filter className="w-4 h-4" />
-                View Rejected
-              </Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Recent Ideas */}
       <Card className="border-slate-200 dark:border-slate-700">
