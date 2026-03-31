@@ -5,7 +5,7 @@ export interface IIdea {
     id: string;
     title: string;
     problemStatement: string;
-    solution: string;
+    solution?: string; // Optional - partial data from server for paid ideas without access
     description: string;
     image: string;
     isPaid: boolean;
@@ -13,9 +13,11 @@ export interface IIdea {
     status: IdeaStatus;
     isFeatured: boolean;
     createdAt: string;
+    updatedAt?: string;
     positiveRatio: number;
     totalUpVotes: number;
     totalDownVotes: number;
+    unlock: boolean;
     author: {
         id: string;
         name: string;
@@ -35,6 +37,10 @@ export interface IIdea {
         comments: number;
         votes: number;
     };
+    feedback?: string | null;
+    isDeleted?: boolean;
+    deletedAt?: Date | null;
+    attachments?: string[];
 }
 
 export interface IIdeaQuery {

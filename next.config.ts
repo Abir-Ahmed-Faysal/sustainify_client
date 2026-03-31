@@ -1,3 +1,4 @@
+// next.config.js
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -8,10 +9,8 @@ const nextConfig: NextConfig = {
         hostname: "res.cloudinary.com",
         pathname: "/dcsiypscn/**",
       },
-      {
-        protocol: "https",
-        hostname: "example.com",
-      },
+      // অন্যান্য trusted host যেমন S3, আপনার server, ইত্যাদি
+      // example.com বাদ দিন, SSL invalid হলে 500 error হবে
     ],
   },
 };

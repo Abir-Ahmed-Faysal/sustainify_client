@@ -33,76 +33,84 @@ export default function CommentsDisplay({
 
   return (
     <div className="space-y-4">
-      {comments.map((comment) => (
-        <div
-          key={comment.id}
-          className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 hover:shadow-sm transition-shadow"
-        >
-          {/* Comment Header */}
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-8 w-8">
-                <AvatarImage
-                  src={comment.author.profile?.avatar}
-                  alt={comment.author.name}
-                />
-                <AvatarFallback>{comment.author.name.charAt(0)}</AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="font-semibold text-slate-900 dark:text-white text-sm">
-                  {comment.author.name}
-                </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {new Date(comment.createdAt).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "short",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </p>
+      {comments.map((comment) => {
+        const authorName = comment.author?.name || "Anonymous";
+        const authorAvatar = comment.author?.profile?.avatar || "/default-avatar.png";
+        const isCurrentUser = currentUserId === comment.authorId;
+        const commentDate = comment.createdAt
+          ? new Date(comment.createdAt).toLocaleString("en-US", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "";
+
+        return (
+          <div
+            key={comment.id}
+            className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 hover:shadow-sm transition-shadow"
+          >
+            {/* Comment Header */}
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={authorAvatar} alt={authorName} />
+                  <AvatarFallback>{authorName.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-semibold text-slate-900 dark:text-white text-sm">
+                    {authorName}
+                  </p>
+                  {commentDate && (
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {commentDate}
+                    </p>
+                  )}
+                </div>
               </div>
+
+              {/* Comment Actions */}
+              {isCurrentUser && (
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onEdit(comment)}
+                    className="h-6 w-6 p-0"
+                    title="Edit comment"
+                  >
+                    <Edit2 className="w-3 h-3 text-slate-600 dark:text-slate-400" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      if (
+                        confirm("Are you sure you want to delete this comment?")
+                      ) {
+                        setDeletingId(comment.id);
+                        onDelete(comment.id);
+                      }
+                    }}
+                    disabled={deletingId === comment.id || isLoading}
+                    className="h-6 w-6 p-0"
+                    title="Delete comment"
+                  >
+                    <Trash2 className="w-3 h-3 text-red-600 dark:text-red-400" />
+                  </Button>
+                </div>
+              )}
             </div>
 
-            {/* Comment Actions */}
-            {currentUserId === comment.authorId && (
-              <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onEdit(comment)}
-                  className="h-6 w-6 p-0"
-                  title="Edit comment"
-                >
-                  <Edit2 className="w-3 h-3 text-slate-600 dark:text-slate-400" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    if (
-                      confirm("Are you sure you want to delete this comment?")
-                    ) {
-                      setDeletingId(comment.id);
-                      onDelete(comment.id);
-                    }
-                  }}
-                  disabled={deletingId === comment.id || isLoading}
-                  className="h-6 w-6 p-0"
-                  title="Delete comment"
-                >
-                  <Trash2 className="w-3 h-3 text-red-600 dark:text-red-400" />
-                </Button>
-              </div>
-            )}
+            {/* Comment Content */}
+            <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">
+              {comment.content}
+            </p>
           </div>
-
-          {/* Comment Content */}
-          <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">
-            {comment.content}
-          </p>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

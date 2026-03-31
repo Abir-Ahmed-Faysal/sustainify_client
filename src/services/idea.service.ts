@@ -1,18 +1,58 @@
+"use server"
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { httpClient } from "@/lib/axios/httpClient";
 import { IIdea, IIdeaQuery } from "@/types/idea.types";
 import { ApiResponse } from "@/types/api.types";
+import { cookies } from "next/headers";
 
 export const getIdeas = async (filters: IIdeaQuery = {}): Promise<ApiResponse<IIdea[]>> => {
     const params: IIdeaQuery = { ...filters };
-    
+
     // axios handles params serialization
     return httpClient.get<IIdea[]>("/ideas", { params: params as Record<string, any> });
 };
 
-export const getIdeaById = async (id: string): Promise<ApiResponse<IIdea>> => {
-    return httpClient.get<IIdea>(`/ideas/${id}`);
+
+
+// services/idea.service.ts
+
+export const getIdeaById = async (
+  id: string
+): Promise<ApiResponse<IIdea | null>> => {
+  try {
+    const cookieStore =await cookies();
+    const accessToken =  cookieStore.get("accessToken")?.value;
+    const refreshToken = cookieStore.get ("refreshToken")?.value;
+
+    const response = await httpClient.get<IIdea>(`/ideas/${id}`, {
+      headers: {
+        Cookie: `accessToken=${accessToken}; refreshToken=${refreshToken}`,
+      },
+    });
+
+    if (!response.data) {
+      return {
+        success: false,
+        message: "Idea not found",
+        data: null,
+      };
+    }
+
+    return {
+      success: true,
+      message: "Idea fetched successfully",
+      data: response.data,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.message || "External server error",
+      data: null,
+    };
+  }
 };
+
 
 // For Server Component Prefetching (Node.js fetch)
 export const prefetchIdeas = async (filters: IIdeaQuery = {}): Promise<ApiResponse<IIdea[]>> => {
@@ -21,7 +61,7 @@ export const prefetchIdeas = async (filters: IIdeaQuery = {}): Promise<ApiRespon
     const url = `${baseUrl}/ideas?${queryString}`;
 
     const res = await fetch(url, {
-        next: { revalidate: 60 } // or whatever revalidation strategy
+        next: { revalidate: 60 }
     });
 
     if (!res.ok) {

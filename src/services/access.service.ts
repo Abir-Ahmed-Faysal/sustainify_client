@@ -9,6 +9,6 @@ export const getMyAccessibleIdeas = async (): Promise<ApiResponse<string[]>> => 
     return httpClient.get<string[]>(`/access/my`);
 };
 
-export const createCheckoutSession = async (ideaId: string): Promise<ApiResponse<{ sessionId: string; url: string }>> => {
+export const createCheckoutSession = async (ideaId: string): Promise<ApiResponse<{ url: string | null }>> => {
     return httpClient.post(`/payment/create-checkout-session`, { ideaId });
 };
