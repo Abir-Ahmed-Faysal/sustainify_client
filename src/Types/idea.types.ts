@@ -54,3 +54,29 @@ export interface IIdeaQuery {
     sortOrder?: "asc" | "desc";
     authorId?: string;
 }
+
+// Create Idea payload matching backend Zod schema
+export interface IIdeaCreate {
+    title: string;
+    problemStatement: string;
+    solution: string;
+    description: string;
+    categoryId: string;
+    image?: string;
+    price?: number;
+    status?: "DRAFT";
+}
+
+// Update Idea payload matching backend Zod schema
+export interface IIdeaUpdate {
+    title?: string;
+    problemStatement?: string;
+    solution?: string;
+    description?: string;
+    categoryId?: string;
+    image?: string;
+    price?: number;
+    status?: "DRAFT" | "UNDER_REVIEW" | "APPROVED" | "REJECTED";
+    feedback?: string;
+    isFeatured?: boolean;
+}

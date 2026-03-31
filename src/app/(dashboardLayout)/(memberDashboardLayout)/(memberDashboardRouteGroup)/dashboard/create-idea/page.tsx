@@ -1,7 +1,6 @@
 import { prefetchCategories } from "@/services/category.service";
 import { ICategory } from "@/types/category.types";
 import CreateIdeaForm from "@/components/module/idea/CreateIdeaForm";
-import { redirect } from "next/navigation";
 
 export default async function CreateIdeaPage() {
   let categories: ICategory[] = [];
