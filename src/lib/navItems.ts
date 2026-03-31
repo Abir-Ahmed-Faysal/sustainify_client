@@ -57,8 +57,8 @@ export const memberNavItems: NavSection[] = [
                 icon: "ThumbsUp"
             },
             {
-                title: "Categories",
-                href: "/dashboard/categories",
+                title: "Blogs",
+                href: "/blog",
                 icon: "Layers"
             },
         ]

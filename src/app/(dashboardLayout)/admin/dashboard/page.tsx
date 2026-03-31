@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { IIdea } from "@/types/idea.types";
 import { getStats } from "@/services/stats.service";
-import { adminDashboardIdeas } from "@/services/idea.service";
+import { getIdeas } from "@/services/idea.service";
 import { DashboardStats } from "@/types/stats.types";
 
 export default function AdminDashboardPage() {
@@ -35,7 +35,7 @@ export default function AdminDashboardPage() {
 
         const [statsResponse, recent] = await Promise.all([
           getStats(),
-          adminDashboardIdeas({ limit: 5, sortOrder: "desc" }),
+          getIdeas({ limit: 5, sortOrder: "desc" }),
         ]);
 
         const backendStats = statsResponse.data;

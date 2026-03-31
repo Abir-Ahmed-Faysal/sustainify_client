@@ -8,6 +8,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { isValidImageUrl, getPlaceholderGradient } from "@/lib/imageUtils";
 import IdeaCardFavourite from "./IdeaCardFavourite";
+import VotingControls from "@/components/module/idea/VotingControls";
 
 interface IdeaCardProps {
     idea: IIdea;
@@ -73,15 +74,24 @@ export default function IdeaCard({ idea }: IdeaCardProps) {
             </CardContent>
 
             <CardFooter className="p-5 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-                        <Star className="size-5 fill-current" />
-                        <span className="text-sm font-bold">{totalUpVotes - totalDownVotes} Votes</span>
+                <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                            <Star className="size-5 fill-current" />
+                            <span className="text-sm font-bold">{totalUpVotes - totalDownVotes} Votes</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
+                            <MessageCircle className="size-5" />
+                            <span className="text-sm font-bold">{_count?.comments || 0}</span>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
-                        <MessageCircle className="size-5" />
-                        <span className="text-sm font-bold">{_count?.comments || 0}</span>
-                    </div>
+
+                    <VotingControls
+                        idea={idea}
+                        userVoteType={idea.userVote?.type ?? null}
+                        isFavorite={!!idea.userFavourite}
+                        showFavorite={false}
+                    />
                 </div>
                 
                 <div className="flex items-center gap-2">

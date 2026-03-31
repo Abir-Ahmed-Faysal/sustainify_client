@@ -55,7 +55,7 @@ export default function Testimonials() {
 
               {/* Quote Text */}
               <p className="text-slate-700 dark:text-slate-300 italic mb-6 leading-relaxed text-base">
-                "{item.quote}"
+                &quot;{item.quote}&quot;
               </p>
 
               {/* Author Info */}

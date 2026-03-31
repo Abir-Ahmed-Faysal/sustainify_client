@@ -41,6 +41,11 @@ export interface IIdea {
     isDeleted?: boolean;
     deletedAt?: Date | null;
     attachments?: string[];
+    userVote?: {
+        id: string;
+        type: "UP" | "DOWN";
+    } | null;
+    userFavourite?: boolean | null;
 }
 
 export interface IIdeaQuery {

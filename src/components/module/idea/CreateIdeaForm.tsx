@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
+
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createIdea } from "@/services/idea.service";
@@ -106,64 +109,69 @@ export default function CreateIdeaForm({
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, isDraft: boolean = false) => {
     e.preventDefault();
     setError(null);
     setSuccess(false);
 
-    // Validation
-    if (!formData.title || formData.title.length < 3) {
-      setError("Title must be at least 3 characters");
-      return;
-    }
-
-    if (
-      !formData.problemStatement ||
-      formData.problemStatement.length < 10
-    ) {
-      setError("Problem statement must be at least 10 characters");
-      return;
-    }
-
-    if (!formData.solution || formData.solution.length < 10) {
-      setError("Solution must be at least 10 characters");
-      return;
-    }
-
-    if (!formData.description || formData.description.length < 10) {
-      setError("Description must be at least 10 characters");
-      return;
-    }
-
-    if (!formData.categoryId) {
-      setError("Please select a category");
-      return;
-    }
-
-    // If image URL is provided, validate it
-    if (formData.image && !formData.image.match(/^https?:\/\/.+/)) {
-      setError("Please provide a valid image URL");
-      return;
-    }
-
-    // If paid, validate price
-    if (isPaid) {
-      if (!formData.price || formData.price <= 0) {
-        setError("Price must be greater than $0.01");
+    if (isDraft) {
+      // Draft can be saved with minimal data
+      saveDraftMutation.mutate(formData);
+    } else {
+      // Full validation for submission
+      if (!formData.title || formData.title.length < 3) {
+        setError("Title must be at least 3 characters");
         return;
       }
-      if (formData.price > 9999.99) {
-        setError("Price must not exceed $9,999.99");
+
+      if (
+        !formData.problemStatement ||
+        formData.problemStatement.length < 10
+      ) {
+        setError("Problem statement must be at least 10 characters");
         return;
       }
-    }
 
-    createIdeaMutation.mutate(formData);
+      if (!formData.solution || formData.solution.length < 10) {
+        setError("Solution must be at least 10 characters");
+        return;
+      }
+
+      if (!formData.description || formData.description.length < 10) {
+        setError("Description must be at least 10 characters");
+        return;
+      }
+
+      if (!formData.categoryId) {
+        setError("Please select a category");
+        return;
+      }
+
+      // If image URL is provided, validate it
+      if (formData.image && !formData.image.match(/^https?:\/\/.+/)) {
+        setError("Please provide a valid image URL");
+        return;
+      }
+
+      // If paid, validate price
+      if (isPaid) {
+        if (!formData.price || formData.price <= 0) {
+          setError("Price must be greater than $0.01");
+          return;
+        }
+        if (formData.price > 9999.99) {
+          setError("Price must not exceed $9,999.99");
+          return;
+        }
+      }
+
+      createIdeaMutation.mutate(formData);
+    }
   };
 
   return (
     <Card className="p-8">
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-6">
         {/* Error Alert */}
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg flex items-start gap-3">
@@ -353,27 +361,56 @@ export default function CreateIdeaForm({
         )}
 
         {/* Submit Buttons */}
-        <div className="flex gap-4 pt-6">
+        <div className="flex gap-2 pt-6 border-t">
           <Button
-            type="submit"
-            disabled={createIdeaMutation.isPending || success}
-            className="flex-1"
+            type="button"
+            variant="outline"
+            onClick={(e) => {
+              e.preventDefault();
+              handleSubmit(e as any, true);
+            }}
+            disabled={saveDraftMutation.isPending || createIdeaMutation.isPending || success}
+            className="flex-1 flex items-center justify-center gap-2"
           >
-            {createIdeaMutation.isPending ? (
+            {saveDraftMutation.isPending ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Creating...
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Saving...
               </>
             ) : (
-              "Create Idea"
+              <>
+                <Save className="w-4 h-4" />
+                Save as Draft
+              </>
             )}
           </Button>
           <Button
             type="button"
-            variant="outline"
+            onClick={(e) => {
+              e.preventDefault();
+              handleSubmit(e as any, false);
+            }}
+            disabled={createIdeaMutation.isPending || saveDraftMutation.isPending || success}
+            className="flex-1 flex items-center justify-center gap-2"
+          >
+            {createIdeaMutation.isPending ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Submitting...
+              </>
+            ) : (
+              <>
+                <Send className="w-4 h-4" />
+                Submit for Review
+              </>
+            )}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
             onClick={() => router.back()}
-            disabled={createIdeaMutation.isPending}
-            className="flex-1"
+            disabled={createIdeaMutation.isPending || saveDraftMutation.isPending}
+            className="px-4"
           >
             Cancel
           </Button>

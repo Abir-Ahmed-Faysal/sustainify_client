@@ -2,7 +2,7 @@ import HeroSection from "@/components/module/home/HeroSection";
 import FeaturedIdeas from "@/components/module/home/FeaturedIdeas";
 import Testimonials from "@/components/module/home/Testimonials";
 import Newsletter from "@/components/module/home/Newsletter";
-import { prefetchIdeas } from "@/services/idea.service";
+import { prefetchIdeas } from "@/services/idea.server.service";
 import { prefetchCategories } from "@/services/category.service";
 import { IIdea } from "@/types/idea.types";
 import { ICategory } from "@/types/category.types";
@@ -45,7 +45,7 @@ const getCategoryEmoji = (categoryName: string): string => {
 export default async function Home() {
   let featuredIdeas: IIdea[] = [];
   let categories: ICategory[] = [];
-  let isLoading = false;
+  const isLoading = false;
 
   try {
     // Fetch featured/approved ideas sorted by votes - top 6 for homepage

@@ -8,7 +8,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, Heart, ThumbsDown, ThumbsUp, Lock } from "lucide-react";
 import { isValidImageUrl, getPlaceholderGradient } from "@/lib/imageUtils";
-import FavouriteButton from "./FavouriteButton";
 
 interface IdeaDetailsProps {
   idea: IIdea;
@@ -21,6 +20,9 @@ interface IdeaDetailsProps {
   onRemoveVote: () => void;
   isFavourited?: boolean;
   userHasAccess?: boolean; // For paid ideas
+  onToggleFavourite?: () => void;
+  isLoadingVote?: boolean;
+  isLoadingFavourite?: boolean;
 }
 
 const getCategoryColor = (category: string) => {
@@ -66,6 +68,9 @@ export default function IdeaDetails({
   onDownvote,
   onRemoveVote,
   isFavourited = false,
+  onToggleFavourite,
+  isLoadingVote = false,
+  isLoadingFavourite = false,
 }: IdeaDetailsProps) {
   const isValidImage = isValidImageUrl(idea.image);
   const placeholderGradient = getPlaceholderGradient(idea.title);
@@ -177,6 +182,7 @@ export default function IdeaDetails({
               <div className="space-y-2">
                 <Button
                   onClick={hasUserUpvoted ? onRemoveVote : onUpvote}
+                  disabled={isLoadingVote}
                   variant={hasUserUpvoted ? "default" : "outline"}
                   className={`w-full gap-2 ${
                     hasUserUpvoted
@@ -189,18 +195,28 @@ export default function IdeaDetails({
                 </Button>
                 <Button
                   onClick={hasUserDownvoted ? onRemoveVote : onDownvote}
+                  disabled={isLoadingVote}
                   variant={hasUserDownvoted ? "destructive" : "outline"}
                   className="w-full gap-2"
                 >
                   <ThumbsDown className="w-4 h-4" />
                   Downvote {hasUserDownvoted && "✓"}
                 </Button>
-                <FavouriteButton
-                  ideaId={idea.id}
-                  isFavourited={isFavourited}
-                  isAuthenticated={!!currentUserId}
-                  showLabel
-                />
+                {onToggleFavourite && (
+                  <Button
+                    onClick={onToggleFavourite}
+                    disabled={isLoadingFavourite}
+                    variant={isFavourited ? "default" : "outline"}
+                    className={`w-full gap-2 ${
+                      isFavourited
+                        ? "bg-red-600 hover:bg-red-700 text-white"
+                        : ""
+                    }`}
+                  >
+                    <Heart className={`w-4 h-4 ${isFavourited ? "fill-current" : ""}`} />
+                    {isFavourited ? "Favorited" : "Favorite"} {isFavourited && "❤️"}
+                  </Button>
+                )}
               </div>
             ) : (
               <p className="text-sm text-slate-600 dark:text-slate-400 text-center py-4 bg-slate-100 dark:bg-slate-700 rounded-lg">

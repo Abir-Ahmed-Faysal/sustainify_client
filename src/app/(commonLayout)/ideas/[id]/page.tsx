@@ -1,6 +1,6 @@
 // app/(public)/ideas/[id]/page.tsx
 
-import { getIdeaById } from "@/services/idea.service";
+import { getIdeaById } from "@/services/idea.server.service";
 import { getUserInfo } from "@/services/auth.service";
 import IdeaDetailsClient from "@/components/module/ideas/IdeaDetailsClient";
 import PaidIdeaAccess from "@/components/module/ideas/PaidIdeaAccess";

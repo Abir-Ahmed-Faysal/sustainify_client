@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import IdeaDetails from "./IdeaDetails";
 import CommentsDisplay from "./CommentsDisplay";
 import CommentInput from "./CommentInput";
@@ -13,32 +13,53 @@ import {
   deleteComment,
   IComment,
 } from "@/services/comment.service";
-import { getMyFavourites } from "@/services/favourite.service";
-import { upvoteIdea, downvoteIdea, removeVote } from "@/services/idea.service";
+import { toggleVote } from "@/services/vote.service";
+import { toggleFavourite } from "@/services/favourite.service";
 import { Loader2 } from "lucide-react";
 
 interface IdeaDetailsClientProps {
   idea: IIdea;
   currentUserId?: string;
   isAuthor: boolean;
-  onUpvote?: () => void;
-  onDownvote?: () => void;
-  onRemoveVote?: () => void;
 }
+
+type VoteType = "UP" | "DOWN";
+
+const applyVoteUpdate = (
+  idea: IIdea,
+  prevVote: VoteType | null,
+  newVote: VoteType | null
+): IIdea => {
+  let totalUpVotes = idea.totalUpVotes;
+  let totalDownVotes = idea.totalDownVotes;
+
+  if (prevVote === "UP") totalUpVotes = Math.max(0, totalUpVotes - 1);
+  if (prevVote === "DOWN") totalDownVotes = Math.max(0, totalDownVotes - 1);
+
+  if (newVote === "UP") totalUpVotes += 1;
+  if (newVote === "DOWN") totalDownVotes += 1;
+
+  const total = totalUpVotes + totalDownVotes;
+  const positiveRatio = total === 0 ? 0 : totalUpVotes / total;
+
+  return {
+    ...idea,
+    totalUpVotes,
+    totalDownVotes,
+    positiveRatio,
+    userVote: newVote ? { id: idea.userVote?.id ?? "local", type: newVote } : null,
+  };
+};
 
 export default function IdeaDetailsClient({
   idea,
   currentUserId,
   isAuthor,
-  onUpvote,
-  onDownvote,
-  onRemoveVote: onRemoveVoteCallback,
 }: IdeaDetailsClientProps) {
+  const queryClient = useQueryClient();
+  const [ideaState, setIdeaState] = useState<IIdea>(idea);
   const [editingComment, setEditingComment] = useState<IComment | null>(null);
-  const [userUpvoteStatus, setUserUpvoteStatus] = useState<
-    "upvote" | "downvote" | "none"
-  >("none");
-  const [isFavourited, setIsFavourited] = useState(false);
+  const [isFavourited, setIsFavourited] = useState<boolean>(() => !!idea.userFavourite);
 
   // Fetch comments
   const {
@@ -53,18 +74,9 @@ export default function IdeaDetailsClient({
     },
   });
 
-  // Fetch user's favourites
-  useEffect(() => {
-    if (currentUserId) {
-      getMyFavourites()
-        .then((response) => {
-          const favouriteIdeas = response.data || [];
-          const isFav = favouriteIdeas.some((fav) => fav.ideaId === idea.id);
-          setIsFavourited(isFav);
-        })
-        .catch((err) => console.error("Error fetching favourites:", err));
-    }
-  }, [currentUserId, idea.id]);
+  const currentVoteType: VoteType | null = ideaState.userVote?.type ?? null;
+  const hasUserUpvoted = currentVoteType === "UP";
+  const hasUserDownvoted = currentVoteType === "DOWN";
 
   // Create comment mutation
   const createCommentMutation = useMutation({
@@ -88,28 +100,34 @@ export default function IdeaDetailsClient({
     },
   });
 
-  // Voting mutations
-  const upvoteMutation = useMutation({
-    mutationFn: () => upvoteIdea(idea.id),
-    onSuccess: () => {
-      setUserUpvoteStatus("upvote");
-      onUpvote?.();
+  // Toggle vote mutation (single API call for UP/DOWN toggle)
+  const toggleVoteMutation = useMutation({
+    mutationFn: (type: VoteType) => toggleVote(ideaState.id, type),
+    onSuccess: (response, requestedType) => {
+      if (!response?.success) return;
+
+      const prevVote = ideaState.userVote?.type ?? null;
+      const nextVote: VoteType | null = response.data?.type ?? null; // null => removed
+      const finalVote = nextVote ?? (requestedType === prevVote ? null : requestedType);
+
+      setIdeaState((prev) => applyVoteUpdate(prev, prevVote, finalVote));
+
+      // Keep any lists/details caches consistent
+      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+      queryClient.invalidateQueries({ queryKey: ["idea", ideaState.id] });
     },
   });
 
-  const downvoteMutation = useMutation({
-    mutationFn: () => downvoteIdea(idea.id),
-    onSuccess: () => {
-      setUserUpvoteStatus("downvote");
-      onDownvote?.();
-    },
-  });
-
-  const removeVoteMutation = useMutation({
-    mutationFn: () => removeVote(idea.id),
-    onSuccess: () => {
-      setUserUpvoteStatus("none");
-      onRemoveVoteCallback?.();
+  // Toggle favourite mutation
+  const toggleFavouriteMutation = useMutation({
+    mutationFn: () => toggleFavourite({ ideaId: idea.id }),
+    onSuccess: (response) => {
+      if (response.data) {
+        const newStatus = response.data.action === "ADDED";
+        setIsFavourited(newStatus);
+        // Invalidate favourite queries
+        queryClient.invalidateQueries({ queryKey: ["myFavorites"] });
+      }
     },
   });
 
@@ -125,19 +143,38 @@ export default function IdeaDetailsClient({
     setEditingComment(comment);
   };
 
+  const handleUpvote = () => {
+    toggleVoteMutation.mutate("UP");
+  };
+
+  const handleDownvote = () => {
+    toggleVoteMutation.mutate("DOWN");
+  };
+
+  const handleToggleFavourite = () => {
+    toggleFavouriteMutation.mutate();
+  };
+
   return (
     <div className="space-y-12">
       {/* Idea Details with Voting */}
       <IdeaDetails
-        idea={idea}
+        idea={ideaState}
         isAuthor={isAuthor}
         currentUserId={currentUserId}
-        hasUserUpvoted={userUpvoteStatus === "upvote"}
-        hasUserDownvoted={userUpvoteStatus === "downvote"}
-        onUpvote={() => upvoteMutation.mutate()}
-        onDownvote={() => downvoteMutation.mutate()}
-        onRemoveVote={() => removeVoteMutation.mutate()}
+        hasUserUpvoted={hasUserUpvoted}
+        hasUserDownvoted={hasUserDownvoted}
+        onUpvote={handleUpvote}
+        onDownvote={handleDownvote}
+        onRemoveVote={() =>
+          toggleVoteMutation.mutate(currentVoteType === "DOWN" ? "DOWN" : "UP")
+        }
         isFavourited={isFavourited}
+        onToggleFavourite={handleToggleFavourite}
+        isLoadingVote={
+          toggleVoteMutation.isPending
+        }
+        isLoadingFavourite={toggleFavouriteMutation.isPending}
       />
 
       {/* Comments Section */}
