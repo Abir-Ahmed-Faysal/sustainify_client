@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { getIdeas } from "@/services/idea.service"
+import { prefetchIdeas } from "@/services/idea.service"
 import { IIdea } from "@/types/idea.types"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Card } from "@/components/ui/card"
@@ -18,7 +18,7 @@ export default function IdeasManagementPage() {
     const fetchIdeas = async () => {
       try {
         setIsLoading(true)
-        const response = await getIdeas({ limit: 100 })
+        const response = await prefetchIdeas({ limit: 100 })
         if (response.data) {
           setAllIdeas(response.data)
         }

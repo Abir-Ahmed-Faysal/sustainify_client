@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useVote, useRemoveVote, useFavorite } from "@/hooks/useVote";
+import { useVote, useFavorite } from "@/hooks/useVote";
 import { Button } from "@/components/ui/button";
 import { ArrowUp, ArrowDown, Heart } from "lucide-react";
 import { IIdea } from "@/types/idea.types";
@@ -25,24 +25,16 @@ export default function VotingControls({
   const [localFavorite, setLocalFavorite] = useState(isFavorite);
 
   const voteMutation = useVote(idea.id);
-  const removeVoteMutation = useRemoveVote(idea.id);
   const favoriteMutation = useFavorite(idea.id);
 
   const handleVote = async (type: "UP" | "DOWN") => {
-    if (localVote === type) {
-      // Remove vote if clicking the same type
-      removeVoteMutation.mutate();
-      setLocalVote(null);
-      onVoteChange?.(null);
-    } else {
-      // Toggle to new vote type
-      voteMutation.mutate(type, {
-        onSuccess: () => {
-          setLocalVote(type);
-          onVoteChange?.(type);
-        },
-      });
-    }
+    voteMutation.mutate(type, {
+      onSuccess: (res) => {
+        const nextVote = res?.data?.type ?? null; // backend returns null when removed
+        setLocalVote(nextVote);
+        onVoteChange?.(nextVote);
+      },
+    });
   };
 
   const handleFavorite = async () => {
@@ -55,9 +47,7 @@ export default function VotingControls({
   };
 
   const isLoading =
-    voteMutation.isPending ||
-    removeVoteMutation.isPending ||
-    favoriteMutation.isPending;
+    voteMutation.isPending || favoriteMutation.isPending;
 
   return (
     <div className="flex items-center gap-2">

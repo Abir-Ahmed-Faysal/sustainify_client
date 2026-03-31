@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { getIdeas } from "@/services/idea.service";
+import { prefetchIdeas } from "@/services/idea.service";
 import { IIdeaQuery } from "@/types/idea.types";
 import IdeaCard from "./IdeaCard";
 import IdeasFilters from "./IdeasFilters";
@@ -16,7 +16,7 @@ interface IdeasClientProps {
 export default function IdeasClient({ queryParams }: IdeasClientProps) {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["ideas", queryParams],
-    queryFn: () => getIdeas(queryParams),
+    queryFn: () => prefetchIdeas(queryParams),
     placeholderData: (prev) => prev, // Smooth transitions between queries
   });
 

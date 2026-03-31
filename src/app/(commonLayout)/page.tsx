@@ -45,7 +45,7 @@ const getCategoryEmoji = (categoryName: string): string => {
 export default async function Home() {
   let featuredIdeas: IIdea[] = [];
   let categories: ICategory[] = [];
-  let isLoading = false;
+  const isLoading = false;
 
   try {
     // Fetch featured/approved ideas sorted by votes - top 6 for homepage

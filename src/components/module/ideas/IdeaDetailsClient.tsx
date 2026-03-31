@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import IdeaDetails from "./IdeaDetails";
 import CommentsDisplay from "./CommentsDisplay";
@@ -13,7 +13,7 @@ import {
   deleteComment,
   IComment,
 } from "@/services/comment.service";
-import { toggleVote, removeVote } from "@/services/vote.service";
+import { toggleVote } from "@/services/vote.service";
 import { toggleFavourite } from "@/services/favourite.service";
 import { Loader2 } from "lucide-react";
 
@@ -32,8 +32,8 @@ export default function IdeaDetailsClient({
   const [editingComment, setEditingComment] = useState<IComment | null>(null);
   const [userUpvoteStatus, setUserUpvoteStatus] = useState<
     "upvote" | "downvote" | "none"
-  >("none");
-  const [isFavourited, setIsFavourited] = useState(false);
+  >(idea.userVote?.type === "UP" ? "upvote" : idea.userVote?.type === "DOWN" ? "downvote" : "none");
+  const [isFavourited, setIsFavourited] = useState<boolean>(() => !!idea.userFavourite);
 
   // Fetch comments
   const {
@@ -48,24 +48,7 @@ export default function IdeaDetailsClient({
     },
   });
 
-  // Fetch user's current vote status and favorites
-  useEffect(() => {
-    if (currentUserId) {
-      // Check current vote status from idea data
-      if (idea.userVote?.type === "UP") {
-        setUserUpvoteStatus("upvote");
-      } else if (idea.userVote?.type === "DOWN") {
-        setUserUpvoteStatus("downvote");
-      } else {
-        setUserUpvoteStatus("none");
-      }
-      
-      // Check if favorited
-      if (idea.userFavourite) {
-        setIsFavourited(true);
-      }
-    }
-  }, [currentUserId, idea.id, idea.userVote, idea.userFavourite]);
+  // Note: we avoid syncing vote/favourite via effects to satisfy `react-hooks/set-state-in-effect`.
 
   // Create comment mutation
   const createCommentMutation = useMutation({
@@ -102,17 +85,6 @@ export default function IdeaDetailsClient({
     },
   });
 
-  // Remove vote mutation
-  const removeVoteMutation = useMutation({
-    mutationFn: () => removeVote(idea.id),
-    onSuccess: () => {
-      setUserUpvoteStatus("none");
-      // Invalidate idea queries to refresh vote counts
-      queryClient.invalidateQueries({ queryKey: ["idea", idea.id] });
-      queryClient.invalidateQueries({ queryKey: ["ideas"] });
-    },
-  });
-
   // Toggle favourite mutation
   const toggleFavouriteMutation = useMutation({
     mutationFn: () => toggleFavourite({ ideaId: idea.id }),
@@ -139,19 +111,11 @@ export default function IdeaDetailsClient({
   };
 
   const handleUpvote = () => {
-    if (userUpvoteStatus === "upvote") {
-      removeVoteMutation.mutate();
-    } else {
-      toggleVoteMutation.mutate("UP");
-    }
+    toggleVoteMutation.mutate("UP");
   };
 
   const handleDownvote = () => {
-    if (userUpvoteStatus === "downvote") {
-      removeVoteMutation.mutate();
-    } else {
-      toggleVoteMutation.mutate("DOWN");
-    }
+    toggleVoteMutation.mutate("DOWN");
   };
 
   const handleToggleFavourite = () => {
@@ -169,11 +133,11 @@ export default function IdeaDetailsClient({
         hasUserDownvoted={userUpvoteStatus === "downvote"}
         onUpvote={handleUpvote}
         onDownvote={handleDownvote}
-        onRemoveVote={() => removeVoteMutation.mutate()}
+        onRemoveVote={() => toggleVoteMutation.mutate(userUpvoteStatus === "downvote" ? "DOWN" : "UP")}
         isFavourited={isFavourited}
         onToggleFavourite={handleToggleFavourite}
         isLoadingVote={
-          toggleVoteMutation.isPending || removeVoteMutation.isPending
+          toggleVoteMutation.isPending
         }
         isLoadingFavourite={toggleFavouriteMutation.isPending}
       />
