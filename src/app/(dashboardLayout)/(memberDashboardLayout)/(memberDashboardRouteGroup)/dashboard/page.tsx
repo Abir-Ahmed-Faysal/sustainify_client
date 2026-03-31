@@ -1,42 +1,64 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getMyIdeas } from "@/services/idea.service";
+import { getMyIdeas,  } from "@/services/idea.service"; // import stats service
 import { IIdea } from "@/types/idea.types";
 import Link from "next/link";
-import { Loader2, Plus, FileText, CheckCircle, AlertCircle, XCircle } from "lucide-react";
+import {
+  Loader2,
+  Plus,
+  FileText,
+  CheckCircle,
+  AlertCircle,
+  XCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { IMemberStats } from "@/types/stats.types";
+import { getStats } from "@/services/stats.service";
 
 export default function MemberDashboardPage() {
   const [ideas, setIdeas] = useState<IIdea[]>([]);
+  const [stats, setStats] = useState<IMemberStats>({
+    total: 0,
+    approved: 0,
+    underReview: 0,
+    rejected: 0,
+    draft: 0,
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchMyIdeas = async () => {
+    const fetchData = async () => {
       try {
-        const response = await getMyIdeas();
-        if (response.data) {
-          setIdeas(response.data);
+        setIsLoading(true);
+
+        // Fetch user ideas
+        const ideasResponse = await getMyIdeas();
+        if (ideasResponse.data) setIdeas(ideasResponse.data);
+
+        // Fetch stats from backend
+        const statsResponse = await getStats();
+        if (
+          statsResponse.success &&
+          statsResponse.data &&
+          "total" in statsResponse.data
+        ) {
+          setStats(statsResponse.data as IMemberStats);
+        } else {
+          setError(statsResponse.message || "Failed to fetch stats");
         }
       } catch (err) {
-        console.error("Error fetching ideas:", err);
-        setError("Failed to load your ideas");
+        console.error("Error fetching dashboard data:", err);
+        setError("Failed to load your dashboard data");
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchMyIdeas();
+    fetchData();
   }, []);
-
-  const stats = {
-    total: ideas.length,
-    approved: ideas.filter(i => i.status === "APPROVED").length,
-    underReview: ideas.filter(i => i.status === "UNDER_REVIEW").length,
-    rejected: ideas.filter(i => i.status === "REJECTED").length,
-  };
 
   const recentIdeas = ideas.slice(0, 3);
 
@@ -44,14 +66,16 @@ export default function MemberDashboardPage() {
     <div className="container mx-auto px-4 md:px-6 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-slate-900 mb-2">Member Dashboard</h1>
-        <p className="text-slate-600">Create, manage, and track your sustainability ideas</p>
+        <h1 className="text-4xl font-bold text-slate-900 mb-2">
+          Member Dashboard
+        </h1>
+        <p className="text-slate-600">
+          Create, manage, and track your sustainability ideas
+        </p>
       </div>
 
       {error && (
-        <div className="bg-red-50 text-red-800 p-4 rounded-lg mb-6">
-          {error}
-        </div>
+        <div className="bg-red-50 text-red-800 p-4 rounded-lg mb-6">{error}</div>
       )}
 
       {/* Quick Action Buttons */}
@@ -87,7 +111,7 @@ export default function MemberDashboardPage() {
                 <FileText className="w-8 h-8 text-slate-400" />
               </div>
             </Card>
-            
+
             <Card className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -97,7 +121,7 @@ export default function MemberDashboardPage() {
                 <CheckCircle className="w-8 h-8 text-green-400" />
               </div>
             </Card>
-            
+
             <Card className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -107,7 +131,7 @@ export default function MemberDashboardPage() {
                 <AlertCircle className="w-8 h-8 text-yellow-400" />
               </div>
             </Card>
-            
+
             <Card className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -124,7 +148,9 @@ export default function MemberDashboardPage() {
             <h2 className="text-2xl font-bold text-slate-900 mb-4">Recent Ideas</h2>
             {recentIdeas.length === 0 ? (
               <Card className="p-8 text-center">
-                <p className="text-slate-600 mb-4">You haven`&apos;`t created any ideas yet</p>
+                <p className="text-slate-600 mb-4">
+                  You haven&apos;t created any ideas yet
+                </p>
                 <Link href="/dashboard/create-idea">
                   <Button>Create Your First Idea</Button>
                 </Link>
@@ -138,19 +164,30 @@ export default function MemberDashboardPage() {
                         <h3 className="font-bold text-lg text-slate-900 mb-2">{idea.title}</h3>
                         <p className="text-slate-600 text-sm mb-3">{idea.description}</p>
                         <div className="flex items-center gap-2">
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            idea.status === "APPROVED" ? "bg-green-100 text-green-800" :
-                            idea.status === "REJECTED" ? "bg-red-100 text-red-800" :
-                            idea.status === "UNDER_REVIEW" ? "bg-yellow-100 text-yellow-800" :
-                            "bg-gray-100 text-gray-800"
-                          }`}>
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                              idea.status === "APPROVED"
+                                ? "bg-green-100 text-green-800"
+                                : idea.status === "REJECTED"
+                                ? "bg-red-100 text-red-800"
+                                : idea.status === "UNDER_REVIEW"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : "bg-gray-100 text-gray-800"
+                            }`}
+                          >
                             {idea.status}
                           </span>
-                          {idea.isPaid && <span className="px-2 py-1 rounded text-xs font-semibold bg-blue-100 text-blue-800">Paid</span>}
+                          {idea.isPaid && (
+                            <span className="px-2 py-1 rounded text-xs font-semibold bg-blue-100 text-blue-800">
+                              Paid
+                            </span>
+                          )}
                         </div>
                       </div>
                       <Link href={`/ideas/${idea.id}`}>
-                        <Button variant="outline" size="sm">View</Button>
+                        <Button variant="outline" size="sm">
+                          View
+                        </Button>
                       </Link>
                     </div>
                   </Card>
@@ -163,4 +200,3 @@ export default function MemberDashboardPage() {
     </div>
   );
 }
-

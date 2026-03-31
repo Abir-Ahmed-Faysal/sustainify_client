@@ -1,19 +1,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { httpClient } from "@/lib/axios/httpClient";
 import { ApiResponse } from "@/types/api.types";
-import { IDashboardStats } from "@/types/stats.types";
+import { DashboardStats, IMemberStats } from "@/types/stats.types";
 import { cookies } from "next/headers";
 
 
 
 
-export const getStats = async (): Promise<ApiResponse<IDashboardStats|null>>=> {
+export const getStats = async (): Promise<ApiResponse<DashboardStats|IMemberStats|null>>=> {
     try {
         const cookieStore = await cookies()
         const accessToken = cookieStore.get("accessToken")?.value;
         const refreshToken = cookieStore.get("refreshToken")?.value;
 
-        const response = await httpClient.get<IDashboardStats>('/stats', {
+        const response = await httpClient.get<DashboardStats>('/stats', {
             headers: {
                 Cookie: `accessToken=${accessToken}; refreshToken=${refreshToken}`,
             }

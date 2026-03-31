@@ -12,4 +12,5 @@ export interface IMemberStats {
   rejected: number;
   underReview: number;
   draft: number;
+  total: number;
 }
