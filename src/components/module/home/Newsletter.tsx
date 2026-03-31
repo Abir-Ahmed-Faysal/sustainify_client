@@ -34,7 +34,7 @@ export default function Newsletter() {
           setIsSubscribed(false);
         }, 3000);
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error("Newsletter subscription error:", error);
       const errorMessage = extractErrorMessage(error, "Failed to subscribe. Please try again.");
       toast.error(errorMessage);

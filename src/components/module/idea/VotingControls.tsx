@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useVote, useFavorite } from "@/hooks/useVote";
+import { useVote, useRemoveVote, useFavorite } from "@/hooks/useVote";
 import { Button } from "@/components/ui/button";
 import { ArrowUp, ArrowDown, Heart } from "lucide-react";
 import { IIdea } from "@/types/idea.types";
@@ -10,7 +10,6 @@ interface VotingControlsProps {
   idea: IIdea;
   userVoteType?: "UP" | "DOWN" | null;
   isFavorite?: boolean;
-  showFavorite?: boolean;
   onVoteChange?: (voteType: "UP" | "DOWN" | null) => void;
   onFavoriteChange?: (isFavorite: boolean) => void;
 }
@@ -19,7 +18,6 @@ export default function VotingControls({
   idea,
   userVoteType = null,
   isFavorite = false,
-  showFavorite = true,
   onVoteChange,
   onFavoriteChange,
 }: VotingControlsProps) {
@@ -27,16 +25,24 @@ export default function VotingControls({
   const [localFavorite, setLocalFavorite] = useState(isFavorite);
 
   const voteMutation = useVote(idea.id);
+  const removeVoteMutation = useRemoveVote(idea.id);
   const favoriteMutation = useFavorite(idea.id);
 
   const handleVote = async (type: "UP" | "DOWN") => {
-    voteMutation.mutate(type, {
-      onSuccess: (res) => {
-        const next = res?.data?.type ?? null; // backend returns null when removed
-        setLocalVote(next);
-        onVoteChange?.(next);
-      },
-    });
+    if (localVote === type) {
+      // Remove vote if clicking the same type
+      removeVoteMutation.mutate();
+      setLocalVote(null);
+      onVoteChange?.(null);
+    } else {
+      // Toggle to new vote type
+      voteMutation.mutate(type, {
+        onSuccess: () => {
+          setLocalVote(type);
+          onVoteChange?.(type);
+        },
+      });
+    }
   };
 
   const handleFavorite = async () => {
@@ -50,6 +56,7 @@ export default function VotingControls({
 
   const isLoading =
     voteMutation.isPending ||
+    removeVoteMutation.isPending ||
     favoriteMutation.isPending;
 
   return (
@@ -88,25 +95,23 @@ export default function VotingControls({
       </div>
 
       {/* Favorite Button */}
-      {showFavorite && (
-        <Button
-          variant={localFavorite ? "default" : "outline"}
-          size="sm"
-          onClick={handleFavorite}
-          disabled={isLoading}
-          className="flex items-center gap-1 ml-2"
-          title="Add to favorites"
-        >
-          <Heart
-            className={`w-4 h-4 ${
-              localFavorite ? "fill-current" : ""
-            }`}
-          />
-          <span className="text-xs">
-            {localFavorite ? "Saved" : "Save"}
-          </span>
-        </Button>
-      )}
+      <Button
+        variant={localFavorite ? "default" : "outline"}
+        size="sm"
+        onClick={handleFavorite}
+        disabled={isLoading}
+        className="flex items-center gap-1 ml-2"
+        title="Add to favorites"
+      >
+        <Heart
+          className={`w-4 h-4 ${
+            localFavorite ? "fill-current" : ""
+          }`}
+        />
+        <span className="text-xs">
+          {localFavorite ? "Saved" : "Save"}
+        </span>
+      </Button>
     </div>
   );
 }

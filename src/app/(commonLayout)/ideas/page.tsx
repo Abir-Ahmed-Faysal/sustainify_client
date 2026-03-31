@@ -4,7 +4,7 @@ import {
   HydrationBoundary,
   QueryClient,
 } from "@tanstack/react-query";
-import { prefetchIdeas } from "@/services/idea.server.service";
+import { getIdeas } from "@/services/idea.service";
 import IdeasClient from "@/components/module/ideas/IdeasClient";
 import { IIdeaQuery } from "@/types/idea.types";
 
@@ -29,7 +29,7 @@ export default async function IdeasPage({
   // Prefetching ideas on the server
   await queryClient.prefetchQuery({
     queryKey: ["ideas", query],
-    queryFn: () => prefetchIdeas(query),
+    queryFn: () => getIdeas(query),
   });
 
   return (

@@ -119,7 +119,7 @@ export default function AboutUsPage() {
               </div>
               <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">Inclusivity</h3>
               <p className="text-slate-700 dark:text-slate-300">
-                Sustainability is everyone&apos;s responsibility. We welcome diverse voices, perspectives, and backgrounds to co-create solutions.
+                Sustainability is everyone's responsibility. We welcome diverse voices, perspectives, and backgrounds to co-create solutions.
               </p>
             </div>
 

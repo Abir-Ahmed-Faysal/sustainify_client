@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import IdeaDetails from "./IdeaDetails";
 import CommentsDisplay from "./CommentsDisplay";
@@ -13,7 +13,7 @@ import {
   deleteComment,
   IComment,
 } from "@/services/comment.service";
-import { toggleVote } from "@/services/vote.service";
+import { toggleVote, removeVote } from "@/services/vote.service";
 import { toggleFavourite } from "@/services/favourite.service";
 import { Loader2 } from "lucide-react";
 
@@ -23,43 +23,17 @@ interface IdeaDetailsClientProps {
   isAuthor: boolean;
 }
 
-type VoteType = "UP" | "DOWN";
-
-const applyVoteUpdate = (
-  idea: IIdea,
-  prevVote: VoteType | null,
-  newVote: VoteType | null
-): IIdea => {
-  let totalUpVotes = idea.totalUpVotes;
-  let totalDownVotes = idea.totalDownVotes;
-
-  if (prevVote === "UP") totalUpVotes = Math.max(0, totalUpVotes - 1);
-  if (prevVote === "DOWN") totalDownVotes = Math.max(0, totalDownVotes - 1);
-
-  if (newVote === "UP") totalUpVotes += 1;
-  if (newVote === "DOWN") totalDownVotes += 1;
-
-  const total = totalUpVotes + totalDownVotes;
-  const positiveRatio = total === 0 ? 0 : totalUpVotes / total;
-
-  return {
-    ...idea,
-    totalUpVotes,
-    totalDownVotes,
-    positiveRatio,
-    userVote: newVote ? { id: idea.userVote?.id ?? "local", type: newVote } : null,
-  };
-};
-
 export default function IdeaDetailsClient({
   idea,
   currentUserId,
   isAuthor,
 }: IdeaDetailsClientProps) {
   const queryClient = useQueryClient();
-  const [ideaState, setIdeaState] = useState<IIdea>(idea);
   const [editingComment, setEditingComment] = useState<IComment | null>(null);
-  const [isFavourited, setIsFavourited] = useState<boolean>(() => !!idea.userFavourite);
+  const [userUpvoteStatus, setUserUpvoteStatus] = useState<
+    "upvote" | "downvote" | "none"
+  >("none");
+  const [isFavourited, setIsFavourited] = useState(false);
 
   // Fetch comments
   const {
@@ -74,9 +48,24 @@ export default function IdeaDetailsClient({
     },
   });
 
-  const currentVoteType: VoteType | null = ideaState.userVote?.type ?? null;
-  const hasUserUpvoted = currentVoteType === "UP";
-  const hasUserDownvoted = currentVoteType === "DOWN";
+  // Fetch user's current vote status and favorites
+  useEffect(() => {
+    if (currentUserId) {
+      // Check current vote status from idea data
+      if (idea.userVote?.type === "UP") {
+        setUserUpvoteStatus("upvote");
+      } else if (idea.userVote?.type === "DOWN") {
+        setUserUpvoteStatus("downvote");
+      } else {
+        setUserUpvoteStatus("none");
+      }
+      
+      // Check if favorited
+      if (idea.userFavourite) {
+        setIsFavourited(true);
+      }
+    }
+  }, [currentUserId, idea.id, idea.userVote, idea.userFavourite]);
 
   // Create comment mutation
   const createCommentMutation = useMutation({
@@ -102,19 +91,25 @@ export default function IdeaDetailsClient({
 
   // Toggle vote mutation (single API call for UP/DOWN toggle)
   const toggleVoteMutation = useMutation({
-    mutationFn: (type: VoteType) => toggleVote(ideaState.id, type),
-    onSuccess: (response, requestedType) => {
-      if (!response?.success) return;
+    mutationFn: (type: "UP" | "DOWN") => toggleVote(idea.id, type),
+    onSuccess: (response, type) => {
+      if (response.success) {
+        setUserUpvoteStatus(type === "UP" ? "upvote" : "downvote");
+        // Invalidate idea queries to refresh vote counts
+        queryClient.invalidateQueries({ queryKey: ["idea", idea.id] });
+        queryClient.invalidateQueries({ queryKey: ["ideas"] });
+      }
+    },
+  });
 
-      const prevVote = ideaState.userVote?.type ?? null;
-      const nextVote: VoteType | null = response.data?.type ?? null; // null => removed
-      const finalVote = nextVote ?? (requestedType === prevVote ? null : requestedType);
-
-      setIdeaState((prev) => applyVoteUpdate(prev, prevVote, finalVote));
-
-      // Keep any lists/details caches consistent
+  // Remove vote mutation
+  const removeVoteMutation = useMutation({
+    mutationFn: () => removeVote(idea.id),
+    onSuccess: () => {
+      setUserUpvoteStatus("none");
+      // Invalidate idea queries to refresh vote counts
+      queryClient.invalidateQueries({ queryKey: ["idea", idea.id] });
       queryClient.invalidateQueries({ queryKey: ["ideas"] });
-      queryClient.invalidateQueries({ queryKey: ["idea", ideaState.id] });
     },
   });
 
@@ -144,11 +139,19 @@ export default function IdeaDetailsClient({
   };
 
   const handleUpvote = () => {
-    toggleVoteMutation.mutate("UP");
+    if (userUpvoteStatus === "upvote") {
+      removeVoteMutation.mutate();
+    } else {
+      toggleVoteMutation.mutate("UP");
+    }
   };
 
   const handleDownvote = () => {
-    toggleVoteMutation.mutate("DOWN");
+    if (userUpvoteStatus === "downvote") {
+      removeVoteMutation.mutate();
+    } else {
+      toggleVoteMutation.mutate("DOWN");
+    }
   };
 
   const handleToggleFavourite = () => {
@@ -159,20 +162,18 @@ export default function IdeaDetailsClient({
     <div className="space-y-12">
       {/* Idea Details with Voting */}
       <IdeaDetails
-        idea={ideaState}
+        idea={idea}
         isAuthor={isAuthor}
         currentUserId={currentUserId}
-        hasUserUpvoted={hasUserUpvoted}
-        hasUserDownvoted={hasUserDownvoted}
+        hasUserUpvoted={userUpvoteStatus === "upvote"}
+        hasUserDownvoted={userUpvoteStatus === "downvote"}
         onUpvote={handleUpvote}
         onDownvote={handleDownvote}
-        onRemoveVote={() =>
-          toggleVoteMutation.mutate(currentVoteType === "DOWN" ? "DOWN" : "UP")
-        }
+        onRemoveVote={() => removeVoteMutation.mutate()}
         isFavourited={isFavourited}
         onToggleFavourite={handleToggleFavourite}
         isLoadingVote={
-          toggleVoteMutation.isPending
+          toggleVoteMutation.isPending || removeVoteMutation.isPending
         }
         isLoadingFavourite={toggleFavouriteMutation.isPending}
       />
