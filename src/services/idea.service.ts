@@ -184,3 +184,10 @@ export const removeVote = async (ideaId: string): Promise<ApiResponse<any>> => {
     return { success: false, message: error?.message || "External server error", data: null };
   }
 };
+
+
+
+
+
+
+

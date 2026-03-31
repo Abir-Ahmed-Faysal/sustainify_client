@@ -7,9 +7,7 @@ export interface UserProfile {
     role: UserRole;
     avatar?: string | null;
     bio?: string | null;
-    location?: string | null;
-    website?: string | null;
-    phone?: string | null;
+    address?: string | null;
     isActive: boolean;
     isDeleted: boolean;
     createdAt: string;
@@ -19,8 +17,6 @@ export interface UserProfile {
         userId: string;
         bio?: string | null;
         avatar?: string | null;
-        location?: string | null;
-        website?: string | null;
-        phone?: string | null;
+        address?: string | null;
     }
 }

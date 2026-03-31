@@ -2,7 +2,7 @@ import HeroSection from "@/components/module/home/HeroSection";
 import FeaturedIdeas from "@/components/module/home/FeaturedIdeas";
 import Testimonials from "@/components/module/home/Testimonials";
 import Newsletter from "@/components/module/home/Newsletter";
-import { getIdeas } from "@/services/idea.service";
+import { prefetchIdeas } from "@/services/idea.service";
 import { prefetchCategories } from "@/services/category.service";
 import { IIdea } from "@/types/idea.types";
 import { ICategory } from "@/types/category.types";
@@ -48,17 +48,20 @@ export default async function Home() {
   let isLoading = false;
 
   try {
-    // Fetch featured/approved ideas sorted by votes
-    const response = await getIdeas({
-      limit: 3,
-      searchTerm: "",
+    // Fetch featured/approved ideas sorted by votes - top 6 for homepage
+    const response = await prefetchIdeas({
+      limit: 6,
     });
     
-    if (response.data) {
-      featuredIdeas = response.data
-        .filter((idea) => idea.isFeatured || idea.status === "APPROVED")
-        .sort((a, b) => (b.totalUpVotes - b.totalDownVotes) - (a.totalUpVotes - a.totalDownVotes))
-        .slice(0, 3);
+    if (response) {
+      featuredIdeas = (response.data || [])
+        .filter((idea) => idea.status === "APPROVED")
+        .sort((a, b) => {
+          const aScore = (a.totalUpVotes || 0) - (a.totalDownVotes || 0);
+          const bScore = (b.totalUpVotes || 0) - (b.totalDownVotes || 0);
+          return bScore - aScore;
+        })
+        .slice(0, 6);
     }
   } catch (error) {
     console.error("Error fetching featured ideas:", error);

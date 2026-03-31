@@ -1,16 +1,50 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+"use server"
+
 import { httpClient } from "@/lib/axios/httpClient";
 import { UserProfile } from "@/types/profile.types";
 import { ApiResponse } from "@/types/api.types";
+import { cookies } from "next/headers";
+import { revalidatePath } from "next/cache";
+
+const getCookieHeaders = async () => {
+  const cookieStore = await cookies();
+  const accessToken = cookieStore.get("accessToken")?.value;
+  const refreshToken = cookieStore.get("refreshToken")?.value;
+
+  return {
+    Cookie: `accessToken=${accessToken}; refreshToken=${refreshToken}`,
+  };
+};
 
 // Get user profile (client-side)
 export const getUserProfile = async (): Promise<ApiResponse<UserProfile>> => {
     return httpClient.get<UserProfile>("/profile");
 };
 
-// Update user profile (client-side)
-export const updateUserProfile = async (payload: Partial<UserProfile>): Promise<ApiResponse<UserProfile>> => {
-    return httpClient.patch<UserProfile>("/profile", payload);
+// Update user profile (server-side) - All fields optional
+export const updateUserProfile = async (payload: {
+  name?: string;
+  avatar?: string | null;
+  bio?: string | null;
+  address?: string | null;
+}): Promise<ApiResponse<UserProfile | null>> => {
+  try {
+    const headers = await getCookieHeaders();
+    const response = await httpClient.patch<UserProfile>("/profile", payload, { headers });
+
+    if (!response.data) {
+      return { success: false, message: "Failed to update profile", data: null };
+    }
+
+    // Revalidate profile-related pages to refresh cached data
+    revalidatePath("/profile");
+    revalidatePath("/dashboard");
+
+    return { success: true, message: "Profile updated successfully", data: response.data };
+  } catch (error: any) {
+    return { success: false, message: error?.message || "External server error", data: null };
+  }
 };
 
 // For Server Component Prefetching (Node.js fetch)

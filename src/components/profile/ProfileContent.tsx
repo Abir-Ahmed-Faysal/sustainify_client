@@ -21,9 +21,7 @@ export default function ProfileContent({ initialProfile }: ProfileContentProps) 
     const [formData, setFormData] = useState({
         name: initialProfile.name || "",
         bio: initialProfile.profile?.bio || initialProfile.bio || "",
-        location: initialProfile.profile?.location || initialProfile.location || "",
-        website: initialProfile.profile?.website || initialProfile.website || "",
-        phone: initialProfile.profile?.phone || initialProfile.phone || "",
+        address: initialProfile.profile?.address || "",
         avatar: initialProfile.profile?.avatar || initialProfile.avatar || ""
     })
 
@@ -40,9 +38,7 @@ export default function ProfileContent({ initialProfile }: ProfileContentProps) 
         setFormData({
             name: profile.name || "",
             bio: profile.profile?.bio || profile.bio || "",
-            location: profile.profile?.location || profile.location || "",
-            website: profile.profile?.website || profile.website || "",
-            phone: profile.profile?.phone || profile.phone || "",
+            address: profile.profile?.address || "",
             avatar: profile.profile?.avatar || profile.avatar || ""
         })
         setError(null)
@@ -57,9 +53,7 @@ export default function ProfileContent({ initialProfile }: ProfileContentProps) 
             const response = await updateUserProfile({
                 name: formData.name,
                 bio: formData.bio,
-                location: formData.location,
-                website: formData.website,
-                phone: formData.phone,
+                address: formData.address,
                 avatar: formData.avatar
             })
 
@@ -175,65 +169,21 @@ export default function ProfileContent({ initialProfile }: ProfileContentProps) 
                         )}
                     </div>
 
-                    {/* Location */}
+                    {/* Address */}
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-2">
-                            Location
+                            Address
                         </label>
                         {isEditing ? (
                             <Input
                                 type="text"
-                                name="location"
-                                value={formData.location}
+                                name="address"
+                                value={formData.address}
                                 onChange={handleChange}
-                                placeholder="Your location"
+                                placeholder="Your address"
                             />
                         ) : (
-                            <p className="text-slate-900">{formData.location || "Not specified"}</p>
-                        )}
-                    </div>
-
-                    {/* Website */}
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">
-                            Website
-                        </label>
-                        {isEditing ? (
-                            <Input
-                                type="url"
-                                name="website"
-                                value={formData.website}
-                                onChange={handleChange}
-                                placeholder="https://example.com"
-                            />
-                        ) : (
-                            <p className="text-slate-900">
-                                {formData.website ? (
-                                    <a href={formData.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                                        {formData.website}
-                                    </a>
-                                ) : (
-                                    "Not specified"
-                                )}
-                            </p>
-                        )}
-                    </div>
-
-                    {/* Phone */}
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">
-                            Phone
-                        </label>
-                        {isEditing ? (
-                            <Input
-                                type="tel"
-                                name="phone"
-                                value={formData.phone}
-                                onChange={handleChange}
-                                placeholder="Your phone number"
-                            />
-                        ) : (
-                            <p className="text-slate-900">{formData.phone || "Not specified"}</p>
+                            <p className="text-slate-900">{formData.address || "Not specified"}</p>
                         )}
                     </div>
 

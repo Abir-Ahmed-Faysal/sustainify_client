@@ -12,6 +12,7 @@ export default async function ProfilePage() {
     // Get the access token from cookies (server-side)
     const cookieStore = await cookies()
     const accessToken = cookieStore.get("accessToken")?.value
+    const refreshToken = cookieStore.get("refreshToken")?.value
 
     if (!accessToken) {
       redirect("/login")
@@ -22,7 +23,7 @@ export default async function ProfilePage() {
     const response = await fetch(`${baseUrl}/auth/me`, {
       headers: {
         "Content-Type": "application/json",
-        "Cookie": `accessToken=${accessToken}`,
+        "Cookie": `accessToken=${accessToken};refreshToken=${refreshToken}`,
       },
     })
 
