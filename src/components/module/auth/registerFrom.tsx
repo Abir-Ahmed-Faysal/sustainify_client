@@ -10,7 +10,7 @@ import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import AppSubmitButton from "./AppSubmitButton";
-import { registerAction } from "@/app/(commonLayout)/(authRoutGroup)/register/_action";
+import { registerAction } from "@/app/(public)/(authRoutGroup)/register/_action";
 import {
   Card,
   CardContent,

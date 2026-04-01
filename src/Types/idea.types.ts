@@ -18,6 +18,7 @@ export interface IIdea {
     totalUpVotes: number;
     totalDownVotes: number;
     unlock: boolean;
+    comment: boolean;
     author: {
         id: string;
         name: string;
@@ -55,12 +56,14 @@ export interface IIdeaQuery {
     category?: string;
     isPaid?: boolean;
     minVotes?: number;
-    sortBy?: "createdAt" | "voteCount" | "commentCount";
+    maxVotes?: number;
+    sortBy?: "createdAt" | "totalUpVotes" | "_count.comments" | "price";
     sortOrder?: "asc" | "desc";
     authorId?: string;
 }
 
-// Create Idea payload matching backend Zod schema
+// Create Idea payload — matches server createIdeaZodSchema exactly
+// status is optional and only accepts "DRAFT" (server enforces this)
 export interface IIdeaCreate {
     title: string;
     problemStatement: string;
@@ -70,9 +73,12 @@ export interface IIdeaCreate {
     image?: string;
     price?: number;
     status?: "DRAFT";
+    attachments?: string[];
 }
 
-// Update Idea payload matching backend Zod schema
+// Update Idea payload — matches server updateIdeaZodSchema exactly.
+// NOTE: status, feedback, isFeatured are NOT here — those are separate
+// admin-only endpoints (updateIdeaStatus / updateIdeaStatusByAdmin / toggleIsFeatured).
 export interface IIdeaUpdate {
     title?: string;
     problemStatement?: string;
@@ -81,7 +87,15 @@ export interface IIdeaUpdate {
     categoryId?: string;
     image?: string;
     price?: number;
-    status?: "DRAFT" | "UNDER_REVIEW" | "APPROVED" | "REJECTED";
-    feedback?: string;
-    isFeatured?: boolean;
+    attachments?: string[];
+}
+
+// Member-facing status change — matches server updateIdeaStatus schema.
+// Only DRAFT ↔ UNDER_REVIEW transitions are allowed for members.
+export type IIdeaMemberStatus = "DRAFT" | "UNDER_REVIEW";
+
+// Admin status update payload — matches server updateIdeaStatusByAdmin schema.
+export interface IIdeaAdminStatusUpdate {
+    status: "APPROVED" | "REJECTED" | "UNDER_REVIEW";
+    feedback?: string; // Required when status is REJECTED
 }

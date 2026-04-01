@@ -2,7 +2,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { httpClient } from "@/lib/axios/httpClient";
-import { IIdea, IIdeaQuery } from "@/types/idea.types";
+import { IIdea, IIdeaCreate, IIdeaUpdate, IIdeaMemberStatus, IIdeaQuery } from "@/types/idea.types";
 import { ApiResponse } from "@/types/api.types";
 import { cookies } from "next/headers";
 
@@ -81,8 +81,27 @@ export const getIdeaById = async (
   }
 };
 
+// GET: Get specific idea belonging to current user
+export const getMyIdeaById = async (
+  id: string
+): Promise<ApiResponse<IIdea | null>> => {
+  try {
+    const headers = await getCookieHeaders();
+
+    const response = await httpClient.get<IIdea>(`/ideas/my-idea/${id}`, { headers });
+
+    if (!response.data) {
+      return { success: false, message: "Idea not found", data: null };
+    }
+
+    return { success: true, message: "Idea fetched successfully", data: response.data };
+  } catch (error: any) {
+    return { success: false, message: error?.message || "External server error", data: null };
+  }
+};
+
 // CREATE: Create a new idea
-export const createIdea = async (payload: any): Promise<ApiResponse<IIdea | null>> => {
+export const createIdea = async (payload: IIdeaCreate): Promise<ApiResponse<IIdea | null>> => {
   try {
     const headers = await getCookieHeaders();
 
@@ -98,10 +117,11 @@ export const createIdea = async (payload: any): Promise<ApiResponse<IIdea | null
   }
 };
 
-// UPDATE: Update an existing idea
+// UPDATE: Update idea content fields only (title, description, solution, etc.)
+// ⚠️  Do NOT include status here — use changeIdeaStatus() for that
 export const updateIdea = async (
   id: string,
-  payload: any
+  payload: IIdeaUpdate
 ): Promise<ApiResponse<IIdea | null>> => {
   try {
     const headers = await getCookieHeaders();
@@ -113,6 +133,27 @@ export const updateIdea = async (
     }
 
     return { success: true, message: "Idea updated successfully", data: response.data };
+  } catch (error: any) {
+    return { success: false, message: error?.message || "External server error", data: null };
+  }
+};
+
+// STATUS: Change idea status (member-facing: DRAFT ↔ UNDER_REVIEW)
+// Matches server updateIdeaStatus schema — separate endpoint from content update
+export const changeIdeaStatus = async (
+  id: string,
+  status: IIdeaMemberStatus
+): Promise<ApiResponse<IIdea | null>> => {
+  try {
+    const headers = await getCookieHeaders();
+
+    const response = await httpClient.patch<IIdea>(`/ideas/${id}`, { status }, { headers });
+
+    if (!response.data) {
+      return { success: false, message: "Failed to change idea status", data: null };
+    }
+
+    return { success: true, message: "Idea status updated", data: response.data };
   } catch (error: any) {
     return { success: false, message: error?.message || "External server error", data: null };
   }
@@ -145,6 +186,7 @@ export const getMyIdeas = async (): Promise<ApiResponse<IIdea[] | null>> => {
     return { success: false, message: error?.message || "External server error", data: null };
   }
 };
+
 
 // VOTING: Upvote an idea
 export const upvoteIdea = async (ideaId: string): Promise<ApiResponse<any>> => {
@@ -185,8 +227,104 @@ export const removeVote = async (ideaId: string): Promise<ApiResponse<any>> => {
   }
 };
 
+// ─── ADMIN OPERATIONS ───────────────────────────────────────────────────────
 
+// ADMIN: Toggle idea featured status
+export const toggleIdeaFeatured = async (
+  ideaId: string,
+  isFeatured: boolean
+): Promise<ApiResponse<IIdea | null>> => {
+  try {
+    const headers = await getCookieHeaders();
 
+    const response = await httpClient.patch<IIdea>(
+      `/ideas/${ideaId}`,
+      { isFeatured },
+      { headers }
+    );
+
+    if (!response.data) {
+      return { success: false, message: "Failed to toggle featured status", data: null };
+    }
+
+    return {
+      success: true,
+      message: `Idea ${isFeatured ? "marked" : "unmarked"} as featured`,
+      data: response.data,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.message || "External server error",
+      data: null,
+    };
+  }
+};
+
+// ADMIN: Update idea status with feedback (APPROVED, REJECTED, UNDER_REVIEW)
+// Feedback is required when status is REJECTED
+export const updateIdeaStatusByAdmin = async (
+  ideaId: string,
+  payload: { status: "APPROVED" | "REJECTED" | "UNDER_REVIEW"; feedback?: string }
+): Promise<ApiResponse<IIdea | null>> => {
+  try {
+    const headers = await getCookieHeaders();
+
+    const response = await httpClient.patch<IIdea>(
+      `/ideas/${ideaId}`,
+      payload,
+      { headers }
+    );
+
+    if (!response.data) {
+      return {
+        success: false,
+        message: "Failed to update idea status",
+        data: null,
+      };
+    }
+
+    return {
+      success: true,
+      message: `Idea status updated to ${payload.status}`,
+      data: response.data,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.message || "External server error",
+      data: null,
+    };
+  }
+};
+
+// ADMIN: Get ideas with specific status for review
+export const getIdeasByStatus = async (
+  status: "UNDER_REVIEW" | "APPROVED" | "REJECTED" | "DRAFT" = "UNDER_REVIEW"
+): Promise<ApiResponse<IIdea[]>> => {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+    const url = `${baseUrl}/ideas?status=${status}`;
+
+    const res = await fetch(url, {
+      next: { revalidate: 60 }
+    });
+
+    if (!res.ok) {
+      throw new Error("Failed to fetch ideas by status");
+    }
+
+    return res.json();
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.message || "Failed to fetch ideas",
+      data: [],
+    };
+  }
+};
+
+// const changeIdeaStatusByAdmin =async (ideaId: string, status: string): Promise<ApiResponse<any>> => {
 
 
 

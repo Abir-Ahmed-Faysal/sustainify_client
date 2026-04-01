@@ -1,83 +1,126 @@
 import Link from "next/link";
-import { Leaf, MessageCircle, Share2, Camera, Globe, Code } from "lucide-react";
+import { 
+  Leaf, 
+  Mail, 
+  Phone, 
+  MapPin, 
+  ChevronRight,
+  Globe,
+  X,
+  Camera,
+  Briefcase
+} from "lucide-react";
 
 export default function Footer() {
+  const currentYear = new Date().getFullYear();
+
   return (
-    <footer className="bg-slate-900 text-slate-300 border-t border-slate-800">
-      <div className="container mx-auto px-4 py-12 md:px-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
-          {/* Logo and About */}
-          <div className="space-y-4">
-            <Link href="/" className="flex items-center gap-1">
-              <Leaf className="h-6 w-6 text-emerald-400" />
-              <span className="text-xl font-bold text-white">
+    <footer className="bg-slate-950 text-slate-400 border-t border-slate-900 pt-20 pb-10">
+      <div className="container mx-auto px-4 md:px-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8 pb-16 border-b border-slate-900">
+          {/* Brand Identity */}
+          <div className="space-y-6">
+            <Link href="/" className="flex items-center gap-2 group">
+              <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 group-hover:bg-emerald-500/20 transition-all">
+                <Leaf className="h-6 w-6 text-emerald-500" />
+              </div>
+              <span className="text-2xl font-extrabold text-white tracking-tight">
                 Sustainify
               </span>
             </Link>
-            <p className="text-sm leading-relaxed">
-              Empowering communities with sustainable ideas for a greener tomorrow. 
-              Join the EcoSpark Hub and make an impact today.
+            <p className="text-sm leading-relaxed max-w-xs">
+              EcoSpark Hub: Igniting change for a better tomorrow. Join our community of 
+              high-impact innovators sharing sustainable solutions across the globe.
             </p>
             <div className="flex gap-4">
-              <Link href="#" className="hover:text-emerald-400 transition-colors">
-                <MessageCircle size={20} />
-              </Link>
-              <Link href="#" className="hover:text-emerald-400 transition-colors">
-                <Share2 size={20} />
-              </Link>
-              <Link href="#" className="hover:text-emerald-400 transition-colors">
-                <Camera size={20} />
-              </Link>
-              <Link href="#" className="hover:text-emerald-400 transition-colors">
-                <Globe size={20} />
-              </Link>
+              <a href="#" className="p-2 rounded-lg bg-slate-900 hover:bg-emerald-500 hover:text-white transition-all transform hover:-translate-y-1">
+                <Globe size={18} />
+              </a>
+              <a href="#" className="p-2 rounded-lg bg-slate-900 hover:bg-emerald-500 hover:text-white transition-all transform hover:-translate-y-1">
+                <X size={18} />
+              </a>
+              <a href="#" className="p-2 rounded-lg bg-slate-900 hover:bg-emerald-500 hover:text-white transition-all transform hover:-translate-y-1">
+                <Camera size={18} />
+              </a>
+              <a href="#" className="p-2 rounded-lg bg-slate-900 hover:bg-emerald-500 hover:text-white transition-all transform hover:-translate-y-1">
+                <Briefcase size={18} />
+              </a>
             </div>
           </div>
 
-          {/* Quick Links */}
+          {/* Useful Navigation */}
           <div>
-            <h3 className="text-white font-semibold mb-4 text-lg">Quick Links</h3>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="/ideas" className="hover:text-emerald-400 transition-colors">Browse Ideas</Link></li>
-              <li><Link href="/about-us" className="hover:text-emerald-400 transition-colors">Our Mission</Link></li>
-              <li><Link href="/blog" className="hover:text-emerald-400 transition-colors">Eco Blog</Link></li>
-              <li><Link href="/contact" className="hover:text-emerald-400 transition-colors">Contact Us</Link></li>
-              <li><Link href="/register" className="hover:text-emerald-400 transition-colors">Join Community</Link></li>
+            <h3 className="text-white font-bold mb-6 text-lg tracking-tight">Explore Portal</h3>
+            <ul className="space-y-4">
+              {[
+                { label: "Browse Ideas", target: "/ideas" },
+                { label: "Our Mission", target: "/about" },
+                { label: "Eco Blog", target: "/blog" },
+                { label: "Contact Us", target: "/contact" },
+                { label: "Join Community", target: "/register" }
+              ].map((item) => (
+                <li key={item.label}>
+                  <Link href={item.target} className="text-sm hover:text-emerald-400 flex items-center gap-2 transition-colors group">
+                    <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all font-bold" />
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
-          {/* Categories */}
+          {/* Quick Categories */}
           <div>
-            <h3 className="text-white font-semibold mb-4 text-lg">Categories</h3>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="/ideas?category=energy" className="hover:text-emerald-400 transition-colors">Renewable Energy</Link></li>
-              <li><Link href="/ideas?category=transport" className="hover:text-emerald-400 transition-colors">Transportation</Link></li>
-              <li><Link href="/ideas?category=waste" className="hover:text-emerald-400 transition-colors">Waste Management</Link></li>
-              <li><Link href="/ideas?category=water" className="hover:text-emerald-400 transition-colors">Water Conservation</Link></li>
-              <li><Link href="/ideas?category=biodiversity" className="hover:text-emerald-400 transition-colors">Biodiversity</Link></li>
+            <h3 className="text-white font-bold mb-6 text-lg tracking-tight">Categories</h3>
+            <ul className="space-y-4">
+              {[
+                "Energy", "Waste", "Transport", "Water", "Biodiversity"
+              ].map((cat) => (
+                <li key={cat}>
+                  <Link href={`/ideas?category=${cat.toLowerCase()}`} className="text-sm hover:text-emerald-400 flex items-center gap-2 transition-colors group">
+                    <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all font-bold" />
+                    {cat} Management
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
-          {/* Legal / Contact */}
-          <div>
-            <h3 className="text-white font-semibold mb-4 text-lg">Contact Us</h3>
-            <ul className="space-y-2 text-sm">
-              <li>Email: support@sustainify.com</li>
-              <li>Phone: +880 1234 567890</li>
-              <li>Address: Dhaka, Bangladesh</li>
-              <li className="pt-4 space-y-2">
-                <p className="font-semibold text-white">Legal</p>
-                <div className="flex gap-4">
-                   <Link href="/privacy" className="hover:text-emerald-400 transition-colors">Privacy Policy</Link>
-                   <Link href="/terms" className="hover:text-emerald-400 transition-colors">Terms of Use</Link>
+          {/* Contact Details */}
+          <div className="space-y-6">
+            <h3 className="text-white font-bold mb-6 text-lg tracking-tight">Contact Us</h3>
+            <ul className="space-y-4 text-sm">
+              <li className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-slate-900">
+                  <Mail size={16} className="text-emerald-500" />
                 </div>
+                <span>support@sustainify.com</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-slate-900">
+                  <Phone size={16} className="text-emerald-500" />
+                </div>
+                <span>+880 1234 567890</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-slate-900">
+                  <MapPin size={16} className="text-emerald-500" />
+                </div>
+                <span>Dhaka, Bangladesh</span>
               </li>
             </ul>
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-slate-800 text-center text-xs">
-          <p>&copy; {new Date().getFullYear()} Sustainify (EcoSpark Hub). All rights reserved.</p>
+        {/* Bottom Bar */}
+        <div className="mt-10 flex flex-col md:flex-row justify-between items-center gap-6">
+          <p className="text-[13px] font-medium">
+            &copy; {currentYear} <span className="text-emerald-500">Sustainify</span> (EcoSpark Hub). ALL RIGHTS RESERVED.
+          </p>
+          <div className="flex gap-8 text-[13px] font-medium">
+             <Link href="/privacy" className="hover:text-emerald-400 transition-colors">Privacy Policy</Link>
+             <Link href="/terms" className="hover:text-emerald-400 transition-colors">Terms of Use</Link>
+          </div>
         </div>
       </div>
     </footer>

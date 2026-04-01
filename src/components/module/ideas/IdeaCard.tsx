@@ -2,19 +2,40 @@ import { IIdea } from "@/types/idea.types";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Star, Eye, Calendar, User, MessageCircle } from "lucide-react";
+import { Eye, Calendar, User, MessageCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { format } from "date-fns";
 import { isValidImageUrl, getPlaceholderGradient } from "@/lib/imageUtils";
 import IdeaCardFavourite from "./IdeaCardFavourite";
+import IdeaCardVote from "./IdeaCardVote";
+
+const getStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+        APPROVED: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
+        DRAFT: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
+        REJECTED: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
+        UNDER_REVIEW: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300",
+    };
+    return colors[status] || "bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300";
+};
+
+const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+        APPROVED: "Approved",
+        DRAFT: "Draft",
+        REJECTED: "Rejected",
+        UNDER_REVIEW: "Under Review",
+    };
+    return labels[status] || status;
+};
 
 interface IdeaCardProps {
     idea: IIdea;
 }
 
 export default function IdeaCard({ idea }: IdeaCardProps) {
-    const { id, title, image, category, isPaid, totalUpVotes, totalDownVotes, author, createdAt, problemStatement, _count } = idea;
+    const { id, title, image, category, isPaid, status, totalUpVotes, totalDownVotes, author, createdAt, problemStatement, _count } = idea;
     const isValidImage = isValidImageUrl(image);
     const placeholderGradient = getPlaceholderGradient(title);
     
@@ -57,12 +78,16 @@ export default function IdeaCard({ idea }: IdeaCardProps) {
                         {title}
                     </CardTitle>
                 </Link>
-                <div className="flex items-center gap-2 text-xs text-slate-500 mt-2">
+                <div className="flex items-center gap-2 text-xs text-slate-500 mt-2 flex-wrap">
                    <User className="size-3" />
                    <span>{author.name}</span>
                    <span className="mx-1">•</span>
                    <Calendar className="size-3" />
                    <span>{format(new Date(createdAt), "MMM d, yyyy")}</span>
+                   <span className="mx-1">•</span>
+                   <Badge className={`text-[10px] px-1.5 py-0.5 ${getStatusColor(status)}`}>
+                       {getStatusLabel(status)}
+                   </Badge>
                 </div>
             </CardHeader>
 
@@ -74,14 +99,16 @@ export default function IdeaCard({ idea }: IdeaCardProps) {
 
             <CardFooter className="p-5 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-                        <Star className="size-5 fill-current" />
-                        <span className="text-sm font-bold">{totalUpVotes - totalDownVotes} Votes</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
+                    <IdeaCardVote 
+                        ideaId={id} 
+                        initialUpVotes={totalUpVotes} 
+                        initialDownVotes={totalDownVotes} 
+                        userVoteType={idea.userVote?.type}
+                    />
+                    <Link href={`/ideas/${id}`} className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                         <MessageCircle className="size-5" />
                         <span className="text-sm font-bold">{_count?.comments || 0}</span>
-                    </div>
+                    </Link>
                 </div>
                 
                 <div className="flex items-center gap-2">

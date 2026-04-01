@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import IdeaDetails from "./IdeaDetails";
 import CommentsDisplay from "./CommentsDisplay";
@@ -28,6 +30,7 @@ export default function IdeaDetailsClient({
   currentUserId,
   isAuthor,
 }: IdeaDetailsClientProps) {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [editingComment, setEditingComment] = useState<IComment | null>(null);
   const [userUpvoteStatus, setUserUpvoteStatus] = useState<
@@ -35,7 +38,7 @@ export default function IdeaDetailsClient({
   >(idea.userVote?.type === "UP" ? "upvote" : idea.userVote?.type === "DOWN" ? "downvote" : "none");
   const [isFavourited, setIsFavourited] = useState<boolean>(() => !!idea.userFavourite);
 
-  // Fetch comments
+  // Fetch comments — only when comments are enabled for this idea
   const {
     data: comments = [],
     isLoading: commentsLoading,
@@ -46,6 +49,7 @@ export default function IdeaDetailsClient({
       const response = await getCommentsByIdeaId(idea.id);
       return response.data || [];
     },
+    enabled: idea.comment !== false,
   });
 
   // Note: we avoid syncing vote/favourite via effects to satisfy `react-hooks/set-state-in-effect`.
@@ -110,16 +114,29 @@ export default function IdeaDetailsClient({
     setEditingComment(comment);
   };
 
+  const requireAuth = (action: () => void) => {
+    if (!currentUserId) {
+      toast.error("You must be logged in to perform this action");
+      router.push("/login");
+      return;
+    }
+    action();
+  };
+
   const handleUpvote = () => {
-    toggleVoteMutation.mutate("UP");
+    requireAuth(() => toggleVoteMutation.mutate("UP"));
   };
 
   const handleDownvote = () => {
-    toggleVoteMutation.mutate("DOWN");
+    requireAuth(() => toggleVoteMutation.mutate("DOWN"));
   };
 
   const handleToggleFavourite = () => {
-    toggleFavouriteMutation.mutate();
+    requireAuth(() => toggleFavouriteMutation.mutate());
+  };
+
+  const handleRemoveVote = () => {
+    requireAuth(() => toggleVoteMutation.mutate(userUpvoteStatus === "downvote" ? "DOWN" : "UP"));
   };
 
   return (
@@ -128,12 +145,11 @@ export default function IdeaDetailsClient({
       <IdeaDetails
         idea={idea}
         isAuthor={isAuthor}
-        currentUserId={currentUserId}
         hasUserUpvoted={userUpvoteStatus === "upvote"}
         hasUserDownvoted={userUpvoteStatus === "downvote"}
         onUpvote={handleUpvote}
         onDownvote={handleDownvote}
-        onRemoveVote={() => toggleVoteMutation.mutate(userUpvoteStatus === "downvote" ? "DOWN" : "UP")}
+        onRemoveVote={handleRemoveVote}
         isFavourited={isFavourited}
         onToggleFavourite={handleToggleFavourite}
         isLoadingVote={
@@ -142,47 +158,55 @@ export default function IdeaDetailsClient({
         isLoadingFavourite={toggleFavouriteMutation.isPending}
       />
 
-      {/* Comments Section */}
+      {/* Comments Section — only shown when the idea has comments enabled */}
       <div className="container mx-auto px-4 md:px-6">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">
-            💬 Comments ({comments.length})
-          </h2>
+          {idea.comment !== false ? (
+            <>
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">
+                💬 Comments ({comments.length})
+              </h2>
 
-          {/* Comment Input */}
-          {currentUserId && (
-            <div className="mb-8">
-              <CommentInput
-                onSubmit={handleCommentSubmit}
-                isLoading={createCommentMutation.isPending}
-                editingComment={editingComment}
-                onCancelEdit={() => setEditingComment(null)}
-              />
-            </div>
-          )}
+              {/* Comment Input — logged-in users only */}
+              {currentUserId ? (
+                <div className="mb-8">
+                  <CommentInput
+                    onSubmit={handleCommentSubmit}
+                    isLoading={createCommentMutation.isPending}
+                    editingComment={editingComment}
+                    onCancelEdit={() => setEditingComment(null)}
+                  />
+                </div>
+              ) : (
+                <div className="mb-8 text-center py-6 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                  <p className="text-slate-600 dark:text-slate-400">
+                    <a href="/login" className="text-emerald-600 hover:underline font-semibold">
+                      Login
+                    </a>{" "}
+                    to join the conversation
+                  </p>
+                </div>
+              )}
 
-          {/* Comments Display */}
-          {commentsLoading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
-            </div>
+              {/* Comments Display */}
+              {commentsLoading ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+                </div>
+              ) : (
+                <CommentsDisplay
+                  comments={comments}
+                  currentUserId={currentUserId}
+                  onDelete={handleCommentDelete}
+                  onEdit={handleCommentEdit}
+                  isLoading={deleteCommentMutation.isPending}
+                />
+              )}
+            </>
           ) : (
-            <CommentsDisplay
-              comments={comments}
-              currentUserId={currentUserId}
-              onDelete={handleCommentDelete}
-              onEdit={handleCommentEdit}
-              isLoading={deleteCommentMutation.isPending}
-            />
-          )}
-
-          {!currentUserId && comments.length > 0 && (
-            <div className="text-center py-8 text-slate-500">
-              <p>
-                <a href="/login" className="text-emerald-600 hover:underline">
-                  Login
-                </a>{" "}
-                to add a comment
+            <div className="text-center py-10 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+              <p className="text-slate-500 dark:text-slate-400 text-sm">
+                💬 Comments are disabled for this idea.
               </p>
             </div>
           )}

@@ -1,12 +1,30 @@
-/* eslint-disable react/jsx-no-undef */
 "use client";
-
+ 
 import { Search, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { motion } from "motion/react"
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { ICategory } from "@/types/category.types";
 
-export default function HeroSection() {
+interface HeroSectionProps {
+  categories?: ICategory[];
+}
+
+export default function HeroSection({ categories = [] }: HeroSectionProps) {
+  const router = useRouter();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+
+  const handleSearch = () => {
+    const params = new URLSearchParams();
+    if (searchTerm) params.set("searchTerm", searchTerm);
+    if (selectedCategory && selectedCategory !== "all") params.set("category", selectedCategory);
+    
+    router.push(`/ideas?${params.toString()}`);
+  };
+
   return (
     <section className="relative w-full h-[650px] flex items-center overflow-hidden">
       {/* Background Image with Overlay */}
@@ -22,7 +40,7 @@ export default function HeroSection() {
         />
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-900/60 to-transparent" />
       </div>
-
+ 
       <div className="container relative z-10 mx-auto px-4 md:px-6">
         <div className="max-w-4xl space-y-8">
           <motion.div 
@@ -46,7 +64,7 @@ export default function HeroSection() {
             Sustainify is the community portal where your sustainable ideas come to life. 
             Join thousands of eco-warriors sharing high-impact solutions.
           </p>
-
+ 
           <div className="pt-4">
             <div className="flex flex-col md:flex-row gap-3 p-2 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 max-w-2xl shadow-2xl">
               <div className="relative flex-grow flex items-center px-4 py-3 bg-white rounded-xl group transition-all">
@@ -54,19 +72,32 @@ export default function HeroSection() {
                 <input
                   type="text"
                   placeholder="Search solutions..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                   className="w-full bg-transparent outline-none text-slate-800 placeholder:text-slate-400 text-sm md:text-base font-medium"
                 />
               </div>
               <div className="relative flex-grow md:max-w-[180px] items-center px-4 py-3 bg-white rounded-xl hidden md:flex">
                 <MapPin className="text-slate-400 mr-2 h-5 w-5" />
-                <select className="w-full bg-transparent outline-none text-slate-700 text-sm appearance-none cursor-pointer font-medium">
-                  <option>All Categories</option>
-                  <option>Energy</option>
-                  <option>Waste</option>
-                  <option>Transport</option>
+                <select 
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full bg-transparent outline-none text-slate-700 text-sm appearance-none cursor-pointer font-medium"
+                >
+                  <option value="all">All Categories</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.name}>
+                      {cat.name}
+                    </option>
+                  ))}
                 </select>
               </div>
-              <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl px-10 h-auto shadow-[0_0_20px_rgba(16,185,129,0.2)] transition-all">
+              <Button 
+                onClick={handleSearch}
+                size="lg" 
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl px-10 h-auto shadow-[0_0_20px_rgba(16,185,129,0.2)] transition-all"
+              >
                 Explore
               </Button>
             </div>
@@ -76,4 +107,3 @@ export default function HeroSection() {
     </section>
   );
 }
-

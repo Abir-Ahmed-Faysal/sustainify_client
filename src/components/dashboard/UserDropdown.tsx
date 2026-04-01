@@ -1,14 +1,33 @@
+"use client";
+
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { UserInfo } from "@/types/user.types"
 import { Key, LogOut, User } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 interface UserDropdownProps {
     userInfo: UserInfo
 }
 
 const UserDropdown = ({ userInfo }: UserDropdownProps) => {
+    const router = useRouter();
+
+    const handleLogout = async () => {
+        try {
+            const res = await fetch("/api/auth/logout", {
+                method: "POST",
+            });
+            if (res.ok) {
+                router.push("/login");
+                router.refresh();
+            }
+        } catch (error) {
+            console.error("Logout failed:", error);
+        }
+    };
+
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -54,7 +73,7 @@ const UserDropdown = ({ userInfo }: UserDropdownProps) => {
 
                 <DropdownMenuSeparator />
 
-                <DropdownMenuItem onClick={() => { }} className="cursor-pointer text-red-600">
+                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600">
                     <LogOut className="mr-2 h-4 w-4" />
                     Logout
                 </DropdownMenuItem>

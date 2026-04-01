@@ -11,7 +11,7 @@ import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import AppSubmitButton from "./AppSubmitButton";
-import { loginAction } from "@/app/(commonLayout)/(authRoutGroup)/login/_action";
+import { loginAction } from "@/app/(public)/(authRoutGroup)/login/_action";
 import {
   Card,
   CardContent,

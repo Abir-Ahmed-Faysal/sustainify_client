@@ -1,85 +1,83 @@
-import { Quote, Star } from "lucide-react";
+import { Quote, Star, TrendingUp } from "lucide-react";
+import { IIdea } from "@/types/idea.types";
+import Image from "next/image";
 
-const testimonials = [
-  {
-    name: "Biodegradable Packaging",
-    author: "Alice Johnson",
-    votes: 1240,
-    quote: "Sustainify helped us find the right partners to scale our mushroom-based packaging globally. The platform's community engaged with our idea and provided invaluable feedback.",
-    role: "Founder & CEO"
-  },
-  {
-    name: "Solar Cookers for Rural areas",
-    author: "Bob Smith",
-    votes: 980,
-    quote: "The feedback from admins and community members was invaluable for refining our technical blueprint. It accelerated our development timeline significantly.",
-    role: "Environmental Engineer"
-  },
-  {
-    name: "EV Charging Grid Optimization",
-    author: "Charlie Davis",
-    votes: 850,
-    quote: "A professional platform for professional green thinkers. The connections I made through Sustainify have been truly impactful for our venture.",
-    role: "Tech Innovator"
-  }
-];
+interface TestimonialsProps {
+  ideas: IIdea[];
+}
 
-export default function Testimonials() {
+export default function Testimonials({ ideas }: TestimonialsProps) {
+  // We handle the ideas passed from the parent which are already sorted by positiveRatio
+  const displayIdeas = ideas.slice(0, 3);
+
+  if (displayIdeas.length === 0) return null;
+
   return (
-    <section className="py-20 bg-white dark:bg-slate-950">
+    <section className="py-20 bg-white dark:bg-slate-950 overflow-hidden">
       <div className="container mx-auto px-4 md:px-6">
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <h2 className="text-4xl font-bold text-slate-900 dark:text-white mb-4">
+        <div className="text-center max-w-2xl mx-auto mb-16 px-4">
+          <h2 className="text-4xl font-extrabold text-slate-900 dark:text-white mb-4 tracking-tight">
             Voices of <span className="text-emerald-600 dark:text-emerald-400">Impact</span>
           </h2>
           <p className="text-lg text-slate-600 dark:text-slate-300">
-            Hear from innovators whose ideas are making a real difference through Sustainify
+            Discover the highest-rated innovations driving sustainable change according to our community.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {testimonials.map((item, index) => (
+          {displayIdeas.map((idea) => (
             <div
-              key={index}
-              className="relative p-8 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-all duration-300 hover:border-emerald-500 dark:hover:border-emerald-500"
+              key={idea.id}
+              className="group relative p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-2"
             >
-              {/* Quote Icon */}
-              <Quote className="absolute top-6 right-6 text-emerald-300 dark:text-emerald-700 w-8 h-8 opacity-40" />
+              {/* Trend Badge */}
+              <div className="absolute -top-3 -right-3 px-4 py-1.5 bg-emerald-600 text-white text-[10px] font-bold rounded-full shadow-lg flex items-center gap-1.5 z-10 animate-pulse">
+                <TrendingUp size={12} />
+                {idea.positiveRatio}% ACCURACY
+              </div>
 
-              {/* Rating */}
-              <div className="flex gap-1 mb-4">
+              {/* Quote Icon Background */}
+              <Quote className="absolute bottom-6 right-6 text-emerald-500 dark:text-emerald-500 w-16 h-16 opacity-[0.03] rotate-12" />
+
+              {/* Verified Rating */}
+              <div className="flex gap-1 mb-5">
                 {[1, 2, 3, 4, 5].map((i) => (
-                  <Star key={i} size={16} fill="#10b981" color="#10b981" />
+                  <Star 
+                    key={i} 
+                    size={14} 
+                    fill={i <= Math.ceil(idea.positiveRatio / 20) ? "#10b981" : "transparent"} 
+                    stroke={i <= Math.ceil(idea.positiveRatio / 20) ? "#10b981" : "#cbd5e1"}
+                  />
                 ))}
               </div>
 
-              {/* Quote Text */}
-              <p className="text-slate-700 dark:text-slate-300 italic mb-6 leading-relaxed text-base">
-                &quot;{item.quote}&quot;
-              </p>
+              {/* Idea Problem Snippet */}
+              <blockquote className="text-slate-700 dark:text-slate-300 font-medium italic mb-8 leading-relaxed text-base min-h-[90px] line-clamp-4 decoration-emerald-500/20 underline-offset-4 decoration-dashed underline">
+                &quot;{idea.description.slice(0, 100)}...&quot;
+              </blockquote>
 
-              {/* Author Info */}
-              <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
-                <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-sm shadow-lg">
-                    {item.author.split(" ").map((n) => n[0]).join("")}
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-slate-900 dark:text-white leading-tight">
-                      {item.author}
-                    </h4>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      {item.role} • {item.votes} votes
-                    </p>
-                  </div>
+              {/* Author Footer */}
+              <div className="flex items-center gap-4 border-t border-slate-100 dark:border-slate-800 pt-6">
+                <div className="relative h-12 w-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-emerald-600 font-bold text-sm shadow-inner transition-transform group-hover:scale-110 duration-300">
+                  {idea.author.profile?.avatar ? (
+                    <Image 
+                      src={idea.author.profile.avatar} 
+                      alt={idea.author.name} 
+                      fill 
+                      className="object-cover rounded-2xl" 
+                    />
+                  ) : (
+                    idea.author.name.split(" ").map((n) => n[0]).join("")
+                  )}
                 </div>
-              </div>
-
-              {/* Idea Badge */}
-              <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-                <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">
-                  Idea: {item.name}
-                </p>
+                <div className="flex flex-col min-w-0">
+                  <h4 className="font-bold text-slate-900 dark:text-white leading-tight truncate">
+                    {idea.author.name}
+                  </h4>
+                  <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wider mt-1">
+                    {idea.category.name}
+                  </p>
+                </div>
               </div>
             </div>
           ))}

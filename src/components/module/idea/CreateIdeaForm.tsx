@@ -7,10 +7,14 @@ import { createIdea } from "@/services/idea.service";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
-import { Loader2, AlertCircle, CheckCircle, Save, Send } from "lucide-react";
+import {
+  Loader2, AlertCircle, CheckCircle, Save, Send,
+  Lock, DollarSign, FileText,
+} from "lucide-react";
 import { ICategory } from "@/types/category.types";
 import { IIdeaCreate } from "@/types/idea.types";
+import { toast } from "sonner";
+import CloudinaryImageUploader from "./CloudinaryImageUploader";
 
 interface CreateIdeaFormProps {
   initialCategories: ICategory[];
@@ -26,6 +30,7 @@ export default function CreateIdeaForm({
   const [error, setError] = useState<string | null>(initialError);
   const [success, setSuccess] = useState(false);
   const [isPaid, setIsPaid] = useState(false);
+
   const [formData, setFormData] = useState<IIdeaCreate>({
     title: "",
     problemStatement: "",
@@ -34,312 +39,283 @@ export default function CreateIdeaForm({
     categoryId: "",
     image: undefined,
     price: undefined,
+    attachments: [],
   });
+  
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isUploadingAttachments, setIsUploadingAttachments] = useState(false);
 
-  // Mutation for creating idea (Submit for review)
-  const createIdeaMutation = useMutation({
-    mutationFn: async (payload: IIdeaCreate) => {
-      return await createIdea(payload);
-    },
-    onSuccess: (data) => {
-      if (data.success) {
-        setSuccess(true);
-        // Invalidate relevant queries
-        queryClient.invalidateQueries({ queryKey: ["myIdeas"] });
-
-        // Redirect after short delay
-        setTimeout(() => {
-          router.push("/dashboard/my-ideas");
-        }, 1500);
-      } else {
-        setError(data.message || "Failed to create idea");
-      }
-    },
-    onError: (err: any) => {
-      setError(err.message || "An error occurred while creating the idea");
-    },
-  });
-
-  // Mutation for saving as draft
+  // ── Mutation: save as draft ──────────────────────────────────────────────
   const saveDraftMutation = useMutation({
-    mutationFn: async (payload: IIdeaCreate) => {
-      return await createIdea({ ...payload, status: "DRAFT" });
-    },
+    mutationFn: () => createIdea({ ...buildCleanPayload(), status: "DRAFT" }),
     onSuccess: (data) => {
       if (data.success) {
-        setSuccess(true);
-        // Invalidate relevant queries
         queryClient.invalidateQueries({ queryKey: ["myIdeas"] });
-
-        // Redirect after short delay
-        setTimeout(() => {
-          router.push("/dashboard/my-ideas");
-        }, 1500);
+        toast.success("Draft saved!");
+        setSuccess(true);
+        setTimeout(() => router.push("/dashboard/my-ideas"), 1200);
       } else {
-        setError(data.message || "Failed to save draft");
+        const msg = data.message || "Failed to save draft";
+        setError(msg);
+        toast.error(msg);
       }
     },
     onError: (err: any) => {
-      setError(err.message || "An error occurred while saving draft");
+      const msg = err.message || "An error occurred";
+      setError(msg);
+      toast.error(msg);
     },
   });
+
+  // ── Mutation: submit for review ──────────────────────────────────────────
+  const submitMutation = useMutation({
+    mutationFn: () => createIdea(buildCleanPayload()),
+    onSuccess: (data) => {
+      if (data.success) {
+        queryClient.invalidateQueries({ queryKey: ["myIdeas"] });
+        toast.success("Idea submitted for review! 🎉");
+        setSuccess(true);
+        setTimeout(() => router.push("/dashboard/my-ideas"), 1200);
+      } else {
+        const msg = data.message || "Failed to submit idea";
+        setError(msg);
+        toast.error(msg);
+      }
+    },
+    onError: (err: any) => {
+      const msg = err.message || "An error occurred";
+      setError(msg);
+      toast.error(msg);
+    },
+  });
+
+  const isPending = saveDraftMutation.isPending || submitMutation.isPending || isUploadingImage || isUploadingAttachments;
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+
+  const buildCleanPayload = (): IIdeaCreate => {
+    const payload: IIdeaCreate = { ...formData };
+    if (typeof payload.image === "string" && payload.image.trim() === "") {
+      payload.image = undefined;
+    }
+    if (!isPaid) payload.price = undefined;
+    return payload;
+  };
+
+  const validate = (): string | null => {
+    if (!formData.title || formData.title.length < 3)
+      return "Title must be at least 3 characters";
+    if (!formData.problemStatement || formData.problemStatement.length < 10)
+      return "Problem statement must be at least 10 characters";
+    if (!formData.solution || formData.solution.length < 10)
+      return "Solution must be at least 10 characters";
+    if (!formData.description || formData.description.length < 10)
+      return "Description must be at least 10 characters";
+    if (!formData.categoryId)
+      return "Please select a category";
+    if (formData.image && !formData.image.match(/^https?:\/\/.+/))
+      return "Please provide a valid image URL";
+    if (isPaid) {
+      if (!formData.price || formData.price <= 0)
+        return "Price must be greater than $0";
+      if (formData.price > 9999.99)
+        return "Price must not exceed $9,999.99";
+    }
+    return null;
+  };
 
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value, type } = e.target;
-
     if (name === "isPaid") {
       setIsPaid((e.target as HTMLInputElement).checked);
-      if (!(e.target as HTMLInputElement).checked) {
+      if (!(e.target as HTMLInputElement).checked)
         setFormData((prev) => ({ ...prev, price: undefined }));
-      }
     } else {
       setFormData((prev) => ({
         ...prev,
         [name]:
-          type === "number"
-            ? value === ""
-              ? undefined
-              : parseFloat(value)
-            : value,
+          type === "number" ? (value === "" ? undefined : parseFloat(value)) : value,
       }));
     }
+    if (error) setError(null);
   };
 
-  const handleSubmit = async (e: React.FormEvent, isDraft: boolean = false) => {
-    e.preventDefault();
-    setError(null);
-    setSuccess(false);
-
-    if (isDraft) {
-      // Draft can be saved with minimal data
-      saveDraftMutation.mutate(formData);
-    } else {
-      // Full validation for submission
-      if (!formData.title || formData.title.length < 3) {
-        setError("Title must be at least 3 characters");
-        return;
-      }
-
-      if (
-        !formData.problemStatement ||
-        formData.problemStatement.length < 10
-      ) {
-        setError("Problem statement must be at least 10 characters");
-        return;
-      }
-
-      if (!formData.solution || formData.solution.length < 10) {
-        setError("Solution must be at least 10 characters");
-        return;
-      }
-
-      if (!formData.description || formData.description.length < 10) {
-        setError("Description must be at least 10 characters");
-        return;
-      }
-
-      if (!formData.categoryId) {
-        setError("Please select a category");
-        return;
-      }
-
-      // If image URL is provided, validate it
-      if (formData.image && !formData.image.match(/^https?:\/\/.+/)) {
-        setError("Please provide a valid image URL");
-        return;
-      }
-
-      // If paid, validate price
-      if (isPaid) {
-        if (!formData.price || formData.price <= 0) {
-          setError("Price must be greater than $0.01");
-          return;
-        }
-        if (formData.price > 9999.99) {
-          setError("Price must not exceed $9,999.99");
-          return;
-        }
-      }
-
-      createIdeaMutation.mutate(formData);
-    }
+  const handleSaveDraft = () => {
+    saveDraftMutation.mutate();
   };
+
+  const handleSubmit = () => {
+    const err = validate();
+    if (err) { setError(err); toast.error(err); return; }
+    submitMutation.mutate();
+  };
+
+  // ── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <Card className="p-8">
-      <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-6">
-        {/* Error Alert */}
+    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+      <div className="p-6 md:p-8 space-y-6">
+
+        {/* Error / Success */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
-            <span>{error}</span>
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300 p-4 rounded-xl flex items-start gap-2.5 text-sm">
+            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            {error}
           </div>
         )}
-
-        {/* Success Alert */}
         {success && (
-          <div className="bg-green-50 border border-green-200 text-green-800 p-4 rounded-lg flex items-start gap-3">
-            <CheckCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
-            <span>Idea created successfully! Redirecting...</span>
+          <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 p-4 rounded-xl flex items-start gap-2.5 text-sm">
+            <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            Redirecting…
           </div>
         )}
 
-        {/* Title */}
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            Idea Title <span className="text-red-500">*</span>
-          </label>
+        {/* ── Title ──────────────────────────────────────────────────── */}
+        <Field
+          label="Idea Title"
+          required
+          hint={`${formData.title.length} / 200 chars (min 3)`}
+        >
           <Input
-            type="text"
             name="title"
             value={formData.title}
             onChange={handleChange}
             placeholder="Give your idea a catchy title"
             maxLength={200}
-            disabled={createIdeaMutation.isPending}
+            disabled={isPending}
           />
-          <p className="text-xs text-slate-500 mt-1">
-            Minimum 3 characters (Currently: {formData.title.length})
-          </p>
-        </div>
+        </Field>
 
-        {/* Problem Statement */}
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            Problem Statement <span className="text-red-500">*</span>
-          </label>
-          <textarea
+        {/* ── Problem Statement ───────────────────────────────────────── */}
+        <Field
+          label="Problem Statement"
+          required
+          hint={`${formData.problemStatement.length} chars (min 10)`}
+        >
+          <Textarea
             name="problemStatement"
             value={formData.problemStatement}
             onChange={handleChange}
             placeholder="What problem are you trying to solve?"
             rows={3}
             maxLength={1000}
-            disabled={createIdeaMutation.isPending}
-            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-slate-100"
+            disabled={isPending}
           />
-          <p className="text-xs text-slate-500 mt-1">
-            Minimum 10 characters (Currently: {formData.problemStatement.length})
-          </p>
-        </div>
+        </Field>
 
-        {/* Proposed Solution */}
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            Proposed Solution <span className="text-red-500">*</span>
-          </label>
-          <textarea
+        {/* ── Solution ────────────────────────────────────────────────── */}
+        <Field
+          label="Proposed Solution"
+          required
+          hint={`${formData.solution.length} chars (min 10)`}
+        >
+          <Textarea
             name="solution"
             value={formData.solution}
             onChange={handleChange}
             placeholder="Describe your proposed solution"
             rows={3}
             maxLength={1000}
-            disabled={createIdeaMutation.isPending}
-            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-slate-100"
+            disabled={isPending}
           />
-          <p className="text-xs text-slate-500 mt-1">
-            Minimum 10 characters (Currently: {formData.solution.length})
-          </p>
-        </div>
+        </Field>
 
-        {/* Full Description */}
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            Full Description <span className="text-red-500">*</span>
-          </label>
-          <textarea
+        {/* ── Description ─────────────────────────────────────────────── */}
+        <Field
+          label="Full Description"
+          required
+          hint={`${formData.description.length} chars (min 10)`}
+        >
+          <Textarea
             name="description"
             value={formData.description}
             onChange={handleChange}
-            placeholder="Provide more details about your idea, expected impact, and implementation timeline"
+            placeholder="More details, expected impact, implementation timeline…"
             rows={4}
             maxLength={2000}
-            disabled={createIdeaMutation.isPending}
-            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-slate-100"
+            disabled={isPending}
           />
-          <p className="text-xs text-slate-500 mt-1">
-            Minimum 10 characters (Currently: {formData.description.length})
-          </p>
-        </div>
+        </Field>
 
-        {/* Category */}
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            Category <span className="text-red-500">*</span>
-          </label>
+        {/* ── Category ────────────────────────────────────────────────── */}
+        <Field label="Category" required>
           <select
             name="categoryId"
             value={formData.categoryId}
             onChange={handleChange}
-            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-slate-100"
-            disabled={
-              createIdeaMutation.isPending || initialCategories.length === 0
-            }
+            disabled={isPending || initialCategories.length === 0}
+            className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white dark:bg-slate-800 dark:text-white disabled:opacity-60"
           >
             <option value="">
               {initialCategories.length === 0
                 ? "No categories available"
                 : "Select a category"}
             </option>
-            {initialCategories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
+            {initialCategories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
               </option>
             ))}
           </select>
-        </div>
+        </Field>
 
-        {/* Image URL */}
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            Image URL <span className="text-slate-500 text-xs">(optional)</span>
-          </label>
-          <Input
-            type="url"
-            name="image"
-            value={formData.image || ""}
-            onChange={handleChange}
-            placeholder="https://example.com/image.jpg"
-            disabled={createIdeaMutation.isPending}
+        {/* ── Image Upload ───────────────────────────────────────────────── */}
+        <Field label="Cover Image" hint="Optional cover image for your idea">
+          <CloudinaryImageUploader
+            multiple={false}
+            value={formData.image ? [formData.image] : []}
+            onChange={(urls) => setFormData(prev => ({ ...prev, image: urls[0] || undefined }))}
+            onUploadingChange={setIsUploadingImage}
           />
-          <p className="text-xs text-slate-500 mt-1">
-            Must be a valid URL starting with http:// or https://
-          </p>
-        </div>
+        </Field>
 
-        {/* Make Idea Paid Checkbox */}
-        <div className="border-t pt-6">
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              name="isPaid"
-              checked={isPaid}
-              onChange={handleChange}
-              disabled={createIdeaMutation.isPending}
-              className="w-4 h-4 text-primary rounded border-slate-300"
-            />
-            <span className="text-sm font-medium text-slate-700">
+        {/* ── Attachments Upload ────────────────────────────────────────── */}
+        <Field label="Additional Attachments" hint="Optional multiple images (max 5)">
+          <CloudinaryImageUploader
+            multiple={true}
+            value={formData.attachments || []}
+            onChange={(urls) => setFormData(prev => ({ ...prev, attachments: urls }))}
+            onUploadingChange={setIsUploadingAttachments}
+            maxFiles={5}
+          />
+        </Field>
+
+        {/* ── Paid toggle ─────────────────────────────────────────────── */}
+        <div className="flex items-start gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <input
+            type="checkbox"
+            id="isPaid"
+            name="isPaid"
+            checked={isPaid}
+            onChange={handleChange}
+            disabled={isPending}
+            className="mt-0.5 w-4 h-4 accent-emerald-600 rounded border-slate-300 cursor-pointer"
+          />
+          <div>
+            <label
+              htmlFor="isPaid"
+              className="text-sm font-medium text-slate-800 dark:text-white cursor-pointer flex items-center gap-1.5"
+            >
+              <Lock className="w-3.5 h-3.5 text-amber-600" />
               Make this idea paid
-            </span>
-          </label>
-          <p className="text-xs text-slate-500 mt-2">
-            Users will need to purchase access to view this idea
-          </p>
+            </label>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Users will need to pay to view the full solution.
+            </p>
+          </div>
         </div>
 
-        {/* Price Input - Only shown when paid */}
+        {/* ── Price ───────────────────────────────────────────────────── */}
         {isPaid && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
-            <label className="block text-sm font-medium text-slate-700 mb-3">
+          <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+            <label className="block text-sm font-medium text-slate-800 dark:text-white mb-2 flex items-center gap-1.5">
+              <DollarSign className="w-4 h-4 text-amber-600" />
               Set Price <span className="text-red-500">*</span>
             </label>
             <div className="flex items-center gap-2">
-              <span className="text-lg font-semibold text-slate-700">$</span>
+              <span className="text-slate-500 font-semibold">$</span>
               <Input
                 type="number"
                 name="price"
@@ -349,73 +325,112 @@ export default function CreateIdeaForm({
                 min="0.01"
                 step="0.01"
                 max="9999.99"
-                disabled={createIdeaMutation.isPending}
+                disabled={isPending}
                 className="flex-1"
               />
-              <span className="text-sm text-slate-600">USD</span>
+              <span className="text-sm text-slate-500">USD</span>
             </div>
-            <p className="text-xs text-slate-600 mt-2">
-              Price must be between $0.01 and $9,999.99
-            </p>
+            <p className="text-xs text-slate-500 mt-2">Between $0.01 and $9,999.99</p>
           </div>
         )}
+      </div>
 
-        {/* Submit Buttons */}
-        <div className="flex gap-2 pt-6 border-t">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={(e) => {
-              e.preventDefault();
-              handleSubmit(e as any, true);
-            }}
-            disabled={saveDraftMutation.isPending || createIdeaMutation.isPending || success}
-            className="flex-1 flex items-center justify-center gap-2"
-          >
-            {saveDraftMutation.isPending ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4" />
-                Save as Draft
-              </>
-            )}
-          </Button>
-          <Button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              handleSubmit(e as any, false);
-            }}
-            disabled={createIdeaMutation.isPending || saveDraftMutation.isPending || success}
-            className="flex-1 flex items-center justify-center gap-2"
-          >
-            {createIdeaMutation.isPending ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Submitting...
-              </>
-            ) : (
-              <>
-                <Send className="w-4 h-4" />
-                Submit for Review
-              </>
-            )}
-          </Button>
+      {/* ── Footer buttons ─────────────────────────────────────────────── */}
+      <div className="px-6 md:px-8 py-5 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex flex-wrap gap-3 justify-between">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleSaveDraft}
+          disabled={isPending || success}
+          className="gap-2"
+        >
+          {saveDraftMutation.isPending ? (
+            <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
+          ) : (
+            <><Save className="w-4 h-4" /> Save as Draft</>
+          )}
+        </Button>
+
+        <div className="flex gap-2 ml-auto">
           <Button
             type="button"
             variant="ghost"
             onClick={() => router.back()}
-            disabled={createIdeaMutation.isPending || saveDraftMutation.isPending}
-            className="px-4"
+            disabled={isPending}
+            className="text-slate-500"
           >
             Cancel
           </Button>
+
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isPending || success}
+            className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-md"
+          >
+            {submitMutation.isPending ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Submitting…</>
+            ) : (
+              <><Send className="w-4 h-4" /> Submit for Review</>
+            )}
+          </Button>
         </div>
-      </form>
-    </Card>
+      </div>
+
+      {/* Info note */}
+      <p className="text-xs text-slate-400 dark:text-slate-500 text-center py-3 flex items-center justify-center gap-1 border-t border-slate-100 dark:border-slate-800">
+        <FileText className="w-3 h-3" />
+        Drafts can be edited and submitted later from My Ideas.
+      </p>
+    </div>
+  );
+}
+
+// ─── Sub-components ──────────────────────────────────────────────────────────
+
+function Field({
+  label,
+  required,
+  hint,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-slate-800 dark:text-slate-200 mb-1.5">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      {children}
+      {hint && (
+        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{hint}</p>
+      )}
+    </div>
+  );
+}
+
+function Textarea({
+  name,
+  value,
+  onChange,
+  placeholder,
+  rows = 3,
+  maxLength,
+  disabled,
+}: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return (
+    <textarea
+      name={name}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      rows={rows}
+      maxLength={maxLength}
+      disabled={disabled}
+      className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none bg-white dark:bg-slate-800 dark:text-white disabled:opacity-60"
+    />
   );
 }

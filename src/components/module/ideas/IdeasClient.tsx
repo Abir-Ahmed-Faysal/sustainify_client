@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { prefetchIdeas } from "@/services/idea.service";
-import { IIdeaQuery } from "@/types/idea.types";
+import { IIdeaQuery, IIdea } from "@/types/idea.types";
 import IdeaCard from "./IdeaCard";
 import IdeasFilters from "./IdeasFilters";
 import Pagination from "@/components/shared/Pagination";
@@ -62,7 +62,7 @@ export default function IdeasClient({ queryParams }: IdeasClientProps) {
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
           >
             <AnimatePresence mode="popLayout">
-              {ideas.map((idea) => (
+              {ideas.map((idea: IIdea) => (
                 <motion.div key={idea.id} variants={itemVariants} layout>
                   <IdeaCard idea={idea} />
                 </motion.div>
