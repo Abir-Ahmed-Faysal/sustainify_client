@@ -17,6 +17,49 @@ import { getStats } from "@/services/stats.service";
 import { adminDashboardIdeas } from "@/services/idea.service";
 import { DashboardStats, IMemberStats } from "@/types/stats.types";
 
+// ✅ Type Guard (STRICT)
+const isAdminStats = (data: unknown): data is DashboardStats => {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "totalIdea" in data
+  );
+};
+
+// ✅ Normalize (FULL SAFE)
+const normalizeStats = (
+  data: DashboardStats | IMemberStats | null
+): DashboardStats => {
+  if (!data) {
+    return {
+      totalIdea: 0,
+      underReview: 0,
+      approved: 0,
+      rejected: 0,
+      paidIdeas: 0,
+    };
+  }
+
+  if (isAdminStats(data)) {
+    return {
+      totalIdea: data.totalIdea ?? 0,
+      underReview: data.underReview ?? 0,
+      approved: data.approved ?? 0,
+      rejected: data.rejected ?? 0,
+      paidIdeas: data.paidIdeas ?? 0,
+    };
+  }
+
+  // ✅ Member → convert to Dashboard
+  return {
+    totalIdea: data.total ?? 0,
+    underReview: data.underReview ?? 0,
+    approved: data.approved ?? 0,
+    rejected: data.rejected ?? 0,
+    paidIdeas: 0,
+  };
+};
+
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<DashboardStats>({
     totalIdea: 0,
@@ -28,49 +71,6 @@ export default function AdminDashboardPage() {
 
   const [recentIdeas, setRecentIdeas] = useState<IIdea[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  // ✅ Type Guard (STRICT)
-  const isAdminStats = (data: unknown): data is DashboardStats => {
-    return (
-      typeof data === "object" &&
-      data !== null &&
-      "totalIdea" in data
-    );
-  };
-
-  // ✅ Normalize (FULL SAFE)
-  const normalizeStats = (
-    data: DashboardStats | IMemberStats | null
-  ): DashboardStats => {
-    if (!data) {
-      return {
-        totalIdea: 0,
-        underReview: 0,
-        approved: 0,
-        rejected: 0,
-        paidIdeas: 0,
-      };
-    }
-
-    if (isAdminStats(data)) {
-      return {
-        totalIdea: data.totalIdea ?? 0,
-        underReview: data.underReview ?? 0,
-        approved: data.approved ?? 0,
-        rejected: data.rejected ?? 0,
-        paidIdeas: data.paidIdeas ?? 0,
-      };
-    }
-
-    // ✅ Member → convert to Dashboard
-    return {
-      totalIdea: data.total ?? 0,
-      underReview: data.underReview ?? 0,
-      approved: data.approved ?? 0,
-      rejected: data.rejected ?? 0,
-      paidIdeas: 0,
-    };
-  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -225,7 +225,7 @@ export default function AdminDashboardPage() {
                   </div>
 
                   <Button asChild size="sm">
-                    <Link href="/admin/dashboard/ideas">Review</Link>
+                    <Link href={`/ideas/${idea.id}`}>Review</Link>
                   </Button>
                 </div>
               ))}

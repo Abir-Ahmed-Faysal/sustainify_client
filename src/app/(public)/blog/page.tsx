@@ -7,6 +7,9 @@ import { getAllBlogs } from "@/services/blog.service";
 import BlogsClient from "@/components/module/blog/BlogsClient";
 import { IBlogQuery } from "@/types/blog.types";
 
+// Revalidate blog listing page every 1 hour (3600s) - blogs are created/updated
+export const revalidate = 3600;
+
 export default async function BlogPage({
   searchParams,
 }: {

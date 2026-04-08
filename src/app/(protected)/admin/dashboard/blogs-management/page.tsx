@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAllBlogs, deleteBlog } from "@/services/blog.service";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 import {
   Table,
   TableBody,
@@ -14,7 +15,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Plus, Search, Edit2, Trash2, ExternalLink, 
-  Loader2, AlertCircle, CheckCircle2, MoreHorizontal 
+  Loader2, CheckCircle2, MoreHorizontal 
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -32,7 +33,7 @@ import {
 export default function BlogsManagementPage() {
   const queryClient = useQueryClient();
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["blogs", { limit: 100 }], // Fetch all for management
     queryFn: () => getAllBlogs({ limit: 100 }),
   });
@@ -116,7 +117,7 @@ export default function BlogsManagementPage() {
                       <div className="flex items-center gap-2">
                         <div className="size-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-400 overflow-hidden">
                            {blog.author.profile?.avatar ? (
-                             <img src={blog.author.profile.avatar} alt="" className="size-full object-cover" />
+                             <Image src={blog.author.profile.avatar} alt="" className="size-full object-cover" width={24} height={24} />
                            ) : blog.author.name.charAt(0)}
                         </div>
                         <span className="text-sm">{blog.author.name}</span>

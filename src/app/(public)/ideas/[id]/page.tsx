@@ -1,15 +1,12 @@
 // app/(public)/ideas/[id]/page.tsx
 
 import { getIdeaById } from "@/services/idea.service";
-import { getUserInfo } from "@/services/auth.service";
 import IdeaDetailsClient from "@/components/module/ideas/IdeaDetailsClient";
 import PaidIdeaAccess from "@/components/module/ideas/PaidIdeaAccess";
-import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowLeft, Lock } from "lucide-react";
 import { IIdea } from "@/types/idea.types";
-
-export const dynamic = "force-dynamic";
 
 interface IdeaDetailsPageProps {
   params: { id: string };
@@ -18,19 +15,13 @@ interface IdeaDetailsPageProps {
 const IdeaDetailsPage = async ({ params }: IdeaDetailsPageProps) => {
   const { id } = await params;
 
-  const [response, currentUser] = await Promise.all([
-    getIdeaById(id),
-    getUserInfo(),
-  ]);
+  const response = await getIdeaById(id);
 
   const idea: IIdea | null = response.data ?? null;
 
   if (!idea) {
     return <div>Idea not found</div>;
   }
-
-  const userId = currentUser?.id || currentUser?._id;
-  const isAuthor = userId === idea.author.id;
 
   const isLocked = idea.isPaid && !idea.unlock;
   const canViewIdea = idea.status === "APPROVED";
@@ -51,21 +42,22 @@ const IdeaDetailsPage = async ({ params }: IdeaDetailsPageProps) => {
         {!isLocked ? (
           <IdeaDetailsClient
             idea={idea}
-            isAuthor={isAuthor}
-            currentUserId={currentUser?._id}
           />
         ) : (
           <>
             {/* 🔒 PREVIEW */}
             <div className="bg-white rounded-lg shadow mb-8">
               {idea.image && (
-                <div className="h-64 overflow-hidden">
-                  <img
-                    src={idea.image}
-                    alt={idea.title}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+              <div className="h-64 overflow-hidden relative">
+                <Image
+                  src={idea.image}
+                  alt={idea.title}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 75vw, 50vw"
+                  priority
+                />
+              </div>
               )}
 
               <div className="p-6">
@@ -90,7 +82,6 @@ const IdeaDetailsPage = async ({ params }: IdeaDetailsPageProps) => {
               ideaId={idea.id}
               price={idea.price ?? 0}
               title={idea.title}
-              isLoggedIn={!!currentUser}
             />
           </>
         )}

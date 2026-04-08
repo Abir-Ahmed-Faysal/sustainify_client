@@ -4,9 +4,12 @@ import {
   HydrationBoundary,
   QueryClient,
 } from "@tanstack/react-query";
-import { prefetchIdeas } from "@/services/idea.service";
+import { getPublicIdeas } from "@/services/idea.service";
 import IdeasClient from "@/components/module/ideas/IdeasClient";
 import { IIdeaQuery } from "@/types/idea.types";
+
+// Revalidate ideas page every 60 seconds - ideas change frequently (votes, new ideas)
+export const revalidate = 60;
 
 export default async function IdeasPage({
   searchParams,
@@ -21,15 +24,20 @@ export default async function IdeasPage({
     page: params.page ? Number(params.page) : 1,
     limit: params.limit ? Number(params.limit) : 12,
     searchTerm: (params.searchTerm as string) || undefined,
-    category: (params.category as string) || undefined,
+    categoryName: (params.categoryName as string) || undefined,
     isPaid: params.isPaid === "true" ? true : params.isPaid === "false" ? false : undefined,
-    sortBy: (params.sortBy as IIdeaQuery["sortBy"]) || "createdAt",
+    "totalUpVotes[gte]": params["totalUpVotes[gte]"] ? Number(params["totalUpVotes[gte]"]) : undefined,
+    "totalUpVotes[lte]": params["totalUpVotes[lte]"] ? Number(params["totalUpVotes[lte]"]) : undefined,
+    "price[gte]": params["price[gte]"] ? Number(params["price[gte]"]) : undefined,
+    "price[lte]": params["price[lte]"] ? Number(params["price[lte]"]) : undefined,
+    authorId: (params.authorId as string) || undefined,
+    sortBy: (params.sortBy as IIdeaQuery["sortBy"]) || "positiveRatio,createdAt",
   };
 
   // Prefetching ideas on the server
   await queryClient.prefetchQuery({
     queryKey: ["ideas", query],
-    queryFn: () => prefetchIdeas(query),
+    queryFn: () => getPublicIdeas(query),
   });
 
   return (

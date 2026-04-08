@@ -36,6 +36,14 @@ export default function Newsletter() {
       }
     } catch (error: unknown) {
       console.error("Newsletter subscription error:", error);
+      
+      // Handle 409 Conflict (already subscribed) as a warning, not an error
+      const apiError = error as { status?: number; data?: { message?: string }; message?: string };
+      if (apiError.status === 409) {
+        toast.warning("This email is already subscribed to our newsletter!");
+        return;
+      }
+      
       const errorMessage = extractErrorMessage(error, "Failed to subscribe. Please try again.");
       toast.error(errorMessage);
     } finally {

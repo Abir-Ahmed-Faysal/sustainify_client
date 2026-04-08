@@ -27,10 +27,14 @@ export default async function ProfilePage() {
 
     // Fetch profile data server-side
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
+    const cookieParts: string[] = [];
+    if (accessToken) cookieParts.push(`accessToken=${accessToken}`);
+    if (refreshToken) cookieParts.push(`refreshToken=${refreshToken}`);
+
     const response = await fetch(`${baseUrl}/auth/me`, {
       headers: {
         "Content-Type": "application/json",
-        "Cookie": `accessToken=${accessToken};refreshToken=${refreshToken}`,
+        "Cookie": cookieParts.join("; "),
       },
     })
 

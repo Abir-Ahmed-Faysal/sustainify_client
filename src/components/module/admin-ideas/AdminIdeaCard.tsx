@@ -12,6 +12,7 @@ import { IIdea } from "@/types/idea.types";
 import { toggleIdeaFeatured, updateIdeaStatusByAdmin } from "@/services/idea.service";
 import { updateIdeaStatusByAdminSchema } from "@/zod/idea.zod";
 import { toast } from "sonner";
+import Link from "next/link";
 
 interface AdminIdeaCardProps {
   idea: IIdea;
@@ -139,16 +140,24 @@ export const AdminIdeaCard: React.FC<AdminIdeaCardProps> = ({
               {idea.isFeatured ? "Remove Featured" : "Mark Featured"}
             </Button>
 
-            {idea.status === "UNDER_REVIEW" && (
+            <Button
+              size="sm"
+              variant="secondary"
+              className="flex-1"
+              onClick={() => setShowStatusForm(true)}
+            >
+              Change Status
+            </Button>
+
+            <Link href={`/admin/dashboard/ideas/${idea.id}`} className="flex-1">
               <Button
                 size="sm"
-                onClick={() => setShowStatusForm(!showStatusForm)}
-                className="flex-1"
+                variant="secondary"
+                className="w-full gap-2"
               >
-                <AlertCircle className="h-4 w-4 mr-2" />
-                Review Status
+                View Details
               </Button>
-            )}
+            </Link>
           </div>
         </CardContent>
       </Card>
@@ -177,7 +186,7 @@ const AdminStatusFormInline: React.FC<AdminStatusFormInlineProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    status: "UNDER_REVIEW" as "APPROVED" | "REJECTED" | "UNDER_REVIEW",
+    status: idea.status as "APPROVED" | "REJECTED" | "UNDER_REVIEW",
     feedback: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});

@@ -17,23 +17,32 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
+import { getQueryClient } from "@/lib/queryClient";
+
 export const metadata: Metadata = {
   title: "Sustainify",
   description: "Sustainability Idea Hub",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const queryClient = getQueryClient();
+
   return (
     <html
       lang="en"
       className={cn("antialiased", geistSans.variable, geistMono.variable, "font-sans", inter.variable)}
     >
       <body className="min-h-screen flex flex-col bg-background text-foreground selection:bg-emerald-100 selection:text-emerald-900">
-        <QueryProviders>{children}</QueryProviders>
+        <QueryProviders>
+          <HydrationBoundary state={dehydrate(queryClient)}>
+            {children}
+          </HydrationBoundary>
+        </QueryProviders>
         <Toaster richColors position="top-center" />
       </body>
     </html>

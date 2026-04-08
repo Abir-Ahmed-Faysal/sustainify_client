@@ -20,9 +20,9 @@ const DashboardSidebarContent = ({ dashboardHome, navItems, userInfo }: Dashboar
     const pathname = usePathname()
     
     return (
-        <div className="hidden md:flex h-full w-64 flex-col border-r bg-card overflow-y-auto">
+        <div className="hidden md:flex h-screen w-64 flex-col border-r border-border bg-card overflow-y-auto">
             {/* Logo / Brand */}
-            <div className="flex h-16 items-center border-b px-6">
+            <div className="flex h-16 items-center border-b border-border px-6">
                 <Link href={dashboardHome}>
                     <span className="text-xl font-bold text-primary">Sustainify</span>
                 </Link>
@@ -72,7 +72,7 @@ const DashboardSidebarContent = ({ dashboardHome, navItems, userInfo }: Dashboar
             </ScrollArea>
 
             {/* User Info At Bottom */}
-            <div className="border-t px-3 py-4">
+            <div className="border-t border-border px-3 py-4">
                 <div className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
                         <span className="text-sm font-semibold text-primary">

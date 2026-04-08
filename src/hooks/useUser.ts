@@ -20,7 +20,7 @@ export function useUser() {
     isError,
     refetch,
   } = useQuery<User | null>({
-    queryKey: ["user"],
+    queryKey: ["me"],
     queryFn: async () => {
       try {
         return await getUserInfo();

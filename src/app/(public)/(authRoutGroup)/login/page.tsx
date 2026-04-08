@@ -1,5 +1,8 @@
 import LoginForm from "@/components/module/auth/loginFrom";
 
+// Revalidate login page every 1 hour (3600s) - auth forms are static
+export const revalidate = 3600;
+
 interface LoginParams {
   searchParams: Promise<{ redirect?: string }>;
 }

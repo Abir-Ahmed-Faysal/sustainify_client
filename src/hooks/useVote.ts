@@ -1,7 +1,8 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toggleVote, toggleFavorite } from "@/services/vote.service";
+import { toggleVote } from "@/services/vote.service";
+import { toggleFavourite } from "@/services/favourite.service";
 
 // Hook for voting
 export const useVote = (ideaId: string) => {
@@ -20,19 +21,19 @@ export const useVote = (ideaId: string) => {
   });
 };
 
-// Hook for favorite toggle
-export const useFavorite = (ideaId: string) => {
+// Hook for favourite toggle
+export const useFavourite = (ideaId: string) => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async () => {
-      return await toggleFavorite(ideaId);
+      return await toggleFavourite({ ideaId });
     },
     onSuccess: () => {
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ["idea", ideaId] });
       queryClient.invalidateQueries({ queryKey: ["ideas"] });
-      queryClient.invalidateQueries({ queryKey: ["myFavorites"] });
+      queryClient.invalidateQueries({ queryKey: ["myFavourites"] });
     },
   });
 };

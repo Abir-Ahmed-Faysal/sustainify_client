@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Search, SlidersHorizontal, X, Loader2 } from "lucide-react";
+import { Search, SlidersHorizontal, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { 
   Select, 
@@ -15,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { useCallback, useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
-import { getAllUsers } from "@/services/user.service";
+import { getPublicUsers } from "@/services/user.service";
 import { getCategories } from "@/services/category.service";
 
 export default function IdeasFilters() {
@@ -25,17 +24,21 @@ export default function IdeasFilters() {
   
   const [searchTerm, setSearchTerm] = useState(searchParams.get("searchTerm") || "");
   const [showAdvanced, setShowAdvanced] = useState(
-    searchParams.get("minVotes") || 
-    searchParams.get("maxVotes") || 
+    searchParams.get("totalUpVotes[gte]") || 
+    searchParams.get("totalUpVotes[lte]") || 
+    searchParams.get("price[gte]") ||
+    searchParams.get("price[lte]") ||
     searchParams.get("authorId") ? true : false
   );
-  const [minVotes, setMinVotes] = useState(searchParams.get("minVotes") || "");
-  const [maxVotes, setMaxVotes] = useState(searchParams.get("maxVotes") || "");
+  const [minVotes, setMinVotes] = useState(searchParams.get("totalUpVotes[gte]") || "");
+  const [maxVotes, setMaxVotes] = useState(searchParams.get("totalUpVotes[lte]") || "");
+  const [minPrice, setMinPrice] = useState(searchParams.get("price[gte]") || "");
+  const [maxPrice, setMaxPrice] = useState(searchParams.get("price[lte]") || "");
 
   // Fetch real authors
   const { data: authorsData, isLoading: isLoadingAuthors } = useQuery({
     queryKey: ["authors"],
-    queryFn: () => getAllUsers({ limit: "100" }), // Get more users to populate filter
+    queryFn: () => getPublicUsers({ limit: "100" }), // Get more users to populate filter
   });
 
   // Fetch real categories
@@ -44,7 +47,7 @@ export default function IdeasFilters() {
     queryFn: () => getCategories(),
   });
 
-  const authors = authorsData?.data?.data ?? [];
+  const authors = authorsData?.data ?? [];
   const categories = categoriesData?.data ?? [];
 
   // Update query params using QueryBuilder format
@@ -78,16 +81,20 @@ export default function IdeasFilters() {
     return () => clearTimeout(timer);
   }, [searchTerm, pathname, router, createQueryString, searchParams]);
 
-  const handleVoteRangeChange = () => {
+  const handleRangeChange = () => {
     router.push(pathname + "?" + createQueryString({ 
-      minVotes: minVotes || undefined,
-      maxVotes: maxVotes || undefined 
+      "totalUpVotes[gte]": minVotes || undefined,
+      "totalUpVotes[lte]": maxVotes || undefined,
+      "price[gte]": minPrice || undefined,
+      "price[lte]": maxPrice || undefined 
     }));
   };
 
   const handleClearFilters = () => {
     setMinVotes("");
     setMaxVotes("");
+    setMinPrice("");
+    setMaxPrice("");
     setSearchTerm("");
     setShowAdvanced(false);
     router.push(pathname);
@@ -118,8 +125,8 @@ export default function IdeasFilters() {
           {/* Category Filter */}
           <div className="w-full md:w-[180px]">
             <Select 
-              defaultValue={searchParams.get("category") || "all"}
-              onValueChange={(val: string) => handleFilterChange("category", val)}
+              defaultValue={searchParams.get("categoryName") || "all"}
+              onValueChange={(val: string) => handleFilterChange("categoryName", val)}
               disabled={isLoadingCategories}
             >
               <SelectTrigger className="h-11 rounded-xl bg-slate-50 dark:bg-slate-950 border-none">
@@ -137,16 +144,17 @@ export default function IdeasFilters() {
           {/* Sorting */}
           <div className="w-full md:w-[180px]">
             <Select 
-              defaultValue={searchParams.get("sortBy") || "createdAt"}
+              defaultValue={searchParams.get("sortBy") || "positiveRatio,createdAt"}
               onValueChange={(val: string) => handleFilterChange("sortBy", val)}
             >
               <SelectTrigger className="h-11 rounded-xl bg-slate-50 dark:bg-slate-950 border-none">
                 <SelectValue placeholder="Sort By" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="positiveRatio,createdAt">Top Match & Recent</SelectItem>
                 <SelectItem value="createdAt">Recent</SelectItem>
                 <SelectItem value="totalUpVotes">Top Rated</SelectItem>
-                <SelectItem value="_count.comments">Most Commented</SelectItem>
+                <SelectItem value="comments._count">Most Commented</SelectItem>
                 <SelectItem value="price">Price: Low to High</SelectItem>
               </SelectContent>
             </Select>
@@ -214,7 +222,7 @@ export default function IdeasFilters() {
                     />
                   </div>
                   <Button 
-                    onClick={handleVoteRangeChange}
+                    onClick={handleRangeChange}
                     size="sm"
                     className="h-10 px-4"
                   >
@@ -222,6 +230,43 @@ export default function IdeasFilters() {
                   </Button>
                 </div>
                 <p className="text-xs text-slate-500">Filter ideas by total upvotes</p>
+              </div>
+
+              {/* Price Range Filter */}
+              <div className="flex-1 space-y-2">
+                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  Price Range ($)
+                </label>
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1">
+                    <Input
+                      type="number"
+                      placeholder="Min price"
+                      value={minPrice}
+                      onChange={(e) => setMinPrice(e.target.value)}
+                      min="0"
+                      className="h-10 rounded-lg"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Input
+                      type="number"
+                      placeholder="Max price"
+                      value={maxPrice}
+                      onChange={(e) => setMaxPrice(e.target.value)}
+                      min="0"
+                      className="h-10 rounded-lg"
+                    />
+                  </div>
+                  <Button 
+                    onClick={handleRangeChange}
+                    size="sm"
+                    className="h-10 px-4"
+                  >
+                    Apply
+                  </Button>
+                </div>
+                <p className="text-xs text-slate-500">Filter paid ideas by price</p>
               </div>
 
               {/* Author Filter */}
@@ -239,7 +284,7 @@ export default function IdeasFilters() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Authors</SelectItem>
-                    {authors.map((author: any) => (
+                    {authors.map((author: { id: string; name: string }) => (
                       <SelectItem key={author.id} value={author.id}>
                         {author.name}
                       </SelectItem>
@@ -251,7 +296,7 @@ export default function IdeasFilters() {
             </div>
 
             {/* Clear Filters Button */}
-            {(minVotes || maxVotes || searchParams.get("authorId") || searchParams.get("category") !== null || searchParams.get("sortBy") !== null || searchParams.get("isPaid") !== null) && (
+            {(minVotes || maxVotes || minPrice || maxPrice || searchParams.get("authorId") || searchParams.get("categoryName") !== null || searchParams.get("sortBy") !== null || searchParams.get("isPaid") !== null) && (
               <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
                 <Button
                   onClick={handleClearFilters}

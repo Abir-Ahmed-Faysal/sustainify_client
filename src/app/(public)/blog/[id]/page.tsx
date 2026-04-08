@@ -2,9 +2,12 @@ import { getBlogBySlug } from "@/services/blog.service";
 import { format } from "date-fns";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Calendar, User, Clock } from "lucide-react";
+import { ArrowLeft, Calendar, Clock } from "lucide-react";
 import { redirect } from "next/navigation";
 import { isValidImageUrl, getPlaceholderGradient } from "@/lib/imageUtils";
+
+// Revalidate blog detail pages every 1 hour (3600s) - blog content can be updated
+export const revalidate = 3600;
 
 interface BlogDetailsPageProps {
   params: Promise<{ id: string }>;
@@ -50,7 +53,7 @@ export default async function BlogDetailsPage({ params }: BlogDetailsPageProps) 
             <div className="flex items-center gap-3 pr-6 border-r border-slate-100 dark:border-slate-800">
               <div className="relative size-12 rounded-full overflow-hidden bg-slate-100 ring-2 ring-emerald-500/10">
                 {author.profile?.avatar ? (
-                  <Image src={author.profile.avatar} alt={author.name} fill className="object-cover" />
+                  <Image src={author.profile.avatar} alt={author.name} fill sizes="48px" className="object-cover" />
                 ) : (
                   <div className="flex items-center justify-center h-full text-lg font-bold text-slate-400">
                     {author.name.charAt(0)}
@@ -92,6 +95,7 @@ export default async function BlogDetailsPage({ params }: BlogDetailsPageProps) 
               src={image!} 
               alt={title} 
               fill 
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 75vw, 60vw"
               priority 
               className="object-cover" 
             />

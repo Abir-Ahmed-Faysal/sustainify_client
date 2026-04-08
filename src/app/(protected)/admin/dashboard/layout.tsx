@@ -10,7 +10,7 @@ const RootDashboardLayout = async ({ children }: { children: React.ReactNode }) 
       {/* Dashboard Sidebar */}
       <DashboardSidebar />
 
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden min-h-screen">
         {/* DashboardNavbar */}
         <DashboardNavbar />
         {/* Dashboard Content */}

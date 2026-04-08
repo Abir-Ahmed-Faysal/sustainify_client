@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createBlog, updateBlog } from "@/services/blog.service";
 import { useRouter } from "next/navigation";
@@ -12,11 +11,11 @@ import {
   AlertCircle,
   CheckCircle,
   Save,
-  Send,
   FileText,
   Image as ImageIcon,
 } from "lucide-react";
 import { IBlog, IBlogCreate, IBlogUpdate } from "@/types/blog.types";
+import { ApiResponse } from "@/types/api.types";
 import { toast } from "sonner";
 
 interface BlogFormProps {
@@ -50,9 +49,9 @@ export default function BlogForm({
   );
 
   const mutation = useMutation({
-    mutationFn: (data: any) =>
-      isEdit ? updateBlog(initialData!.id, data) : createBlog(data),
-    onSuccess: (data) => {
+    mutationFn: (data: IBlogCreate | IBlogUpdate) =>
+      isEdit ? updateBlog(initialData!.id, data as IBlogUpdate) : createBlog(data as IBlogCreate),
+    onSuccess: (data: ApiResponse<IBlog | null>) => {
       if (data.success) {
         queryClient.invalidateQueries({ queryKey: ["blogs"] });
         toast.success(
@@ -71,7 +70,7 @@ export default function BlogForm({
         toast.error(msg);
       }
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       const msg = err.message || "An error occurred";
       setError(msg);
       toast.error(msg);
@@ -230,7 +229,12 @@ export default function BlogForm({
   );
 }
 
-function Field({ label, required, hint, children }: any) {
+function Field({ label, required, hint, children }: {
+  label: string;
+  required?: boolean;
+  hint?: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="space-y-1.5">
       <label className="text-sm font-bold text-slate-800 dark:text-slate-200 block">

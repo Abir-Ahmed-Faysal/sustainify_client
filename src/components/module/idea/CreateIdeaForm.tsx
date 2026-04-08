@@ -14,7 +14,9 @@ import {
 import { ICategory } from "@/types/category.types";
 import { IIdeaCreate } from "@/types/idea.types";
 import { toast } from "sonner";
-import CloudinaryImageUploader from "./CloudinaryImageUploader";
+import CloudinaryImageUploader from "@/components/shared/CloudinaryImageUploader";
+import { rollbackUploadedImages } from "@/services/cloudinary.service";
+import { extractErrorMessage, extractResponseErrorMessage, extractSuccessMessage } from "@/lib/errorMessageExtractor";
 
 interface CreateIdeaFormProps {
   initialCategories: ICategory[];
@@ -45,25 +47,34 @@ export default function CreateIdeaForm({
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isUploadingAttachments, setIsUploadingAttachments] = useState(false);
 
+  // Track initial state for rollback
+  const [initialImage] = useState<string | undefined>(undefined);
+  const [initialAttachments] = useState<string[]>([]);
+
   // ── Mutation: save as draft ──────────────────────────────────────────────
   const saveDraftMutation = useMutation({
     mutationFn: () => createIdea({ ...buildCleanPayload(), status: "DRAFT" }),
     onSuccess: (data) => {
       if (data.success) {
         queryClient.invalidateQueries({ queryKey: ["myIdeas"] });
-        toast.success("Draft saved!");
+        const msg = extractSuccessMessage(data, "Draft saved!");
+        toast.success(msg);
         setSuccess(true);
         setTimeout(() => router.push("/dashboard/my-ideas"), 1200);
       } else {
-        const msg = data.message || "Failed to save draft";
+        const msg = extractResponseErrorMessage(data, "Failed to save draft");
         setError(msg);
         toast.error(msg);
+        // Rollback images on failure
+        performRollback();
       }
     },
     onError: (err: any) => {
-      const msg = err.message || "An error occurred";
+      const msg = extractErrorMessage(err, "Failed to save draft");
       setError(msg);
       toast.error(msg);
+      // Rollback images on error
+      performRollback();
     },
   });
 
@@ -73,23 +84,53 @@ export default function CreateIdeaForm({
     onSuccess: (data) => {
       if (data.success) {
         queryClient.invalidateQueries({ queryKey: ["myIdeas"] });
-        toast.success("Idea submitted for review! 🎉");
+        const msg = extractSuccessMessage(data, "Idea submitted for review! 🎉");
+        toast.success(msg);
         setSuccess(true);
         setTimeout(() => router.push("/dashboard/my-ideas"), 1200);
       } else {
-        const msg = data.message || "Failed to submit idea";
+        const msg = extractResponseErrorMessage(data, "Failed to submit idea");
         setError(msg);
         toast.error(msg);
+        // Rollback images on failure
+        performRollback();
       }
     },
     onError: (err: any) => {
-      const msg = err.message || "An error occurred";
+      const msg = extractErrorMessage(err, "Failed to submit idea");
       setError(msg);
       toast.error(msg);
+      // Rollback images on error
+      performRollback();
     },
   });
 
   const isPending = saveDraftMutation.isPending || submitMutation.isPending || isUploadingImage || isUploadingAttachments;
+
+  // ── Rollback handler ─────────────────────────────────────────────────────
+  const performRollback = async () => {
+    const urlsToDelete: string[] = [];
+    
+    // Collect newly uploaded image
+    if (formData.image && formData.image !== initialImage) {
+      urlsToDelete.push(formData.image);
+    }
+    
+    // Collect newly uploaded attachments
+    if (formData.attachments && formData.attachments.length > 0) {
+      formData.attachments.forEach((url) => {
+        if (!initialAttachments.includes(url)) {
+          urlsToDelete.push(url);
+        }
+      });
+    }
+
+    if (urlsToDelete.length > 0) {
+      await rollbackUploadedImages(urlsToDelete, (rollbackError) => {
+        console.warn("Rollback warning:", rollbackError);
+      });
+    }
+  };
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -161,13 +202,13 @@ export default function CreateIdeaForm({
         {/* Error / Success */}
         {error && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300 p-4 rounded-xl flex items-start gap-2.5 text-sm">
-            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
             {error}
           </div>
         )}
         {success && (
           <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 p-4 rounded-xl flex items-start gap-2.5 text-sm">
-            <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <CheckCircle className="w-4 h-4 mt-0.5 shrink-0" />
             Redirecting…
           </div>
         )}
@@ -264,9 +305,9 @@ export default function CreateIdeaForm({
         {/* ── Image Upload ───────────────────────────────────────────────── */}
         <Field label="Cover Image" hint="Optional cover image for your idea">
           <CloudinaryImageUploader
-            multiple={false}
-            value={formData.image ? [formData.image] : []}
-            onChange={(urls) => setFormData(prev => ({ ...prev, image: urls[0] || undefined }))}
+            mode="single"
+            value={formData.image}
+            onChange={(url) => setFormData(prev => ({ ...prev, image: typeof url === 'string' ? url : url[0] || undefined }))}
             onUploadingChange={setIsUploadingImage}
           />
         </Field>
@@ -274,9 +315,9 @@ export default function CreateIdeaForm({
         {/* ── Attachments Upload ────────────────────────────────────────── */}
         <Field label="Additional Attachments" hint="Optional multiple images (max 5)">
           <CloudinaryImageUploader
-            multiple={true}
+            mode="multiple"
             value={formData.attachments || []}
-            onChange={(urls) => setFormData(prev => ({ ...prev, attachments: urls }))}
+            onChange={(urls) => setFormData(prev => ({ ...prev, attachments: Array.isArray(urls) ? urls : [urls] }))}
             onUploadingChange={setIsUploadingAttachments}
             maxFiles={5}
           />
@@ -310,7 +351,7 @@ export default function CreateIdeaForm({
         {/* ── Price ───────────────────────────────────────────────────── */}
         {isPaid && (
           <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
-            <label className="block text-sm font-medium text-slate-800 dark:text-white mb-2 flex items-center gap-1.5">
+            <label className="flex text-sm font-medium text-slate-800 dark:text-white mb-2 items-center gap-1.5">
               <DollarSign className="w-4 h-4 text-amber-600" />
               Set Price <span className="text-red-500">*</span>
             </label>

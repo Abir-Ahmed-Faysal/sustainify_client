@@ -5,20 +5,21 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Lock } from "lucide-react";
 import Link from "next/link";
 import { createCheckoutSession } from "@/services/access.service";
+import { useUser } from "@/hooks/useUser";
 
 interface Props {
   ideaId: string;
   price: number;
   title: string;
-  isLoggedIn: boolean;
 }
 
 export default function PaidIdeaAccess({
   ideaId,
   price,
   title,
-  isLoggedIn,
 }: Props) {
+  const { user } = useUser();
+  const isLoggedIn = !!user;
   const [loading, setLoading] = useState(false);
 
   const handlePurchase = async () => {

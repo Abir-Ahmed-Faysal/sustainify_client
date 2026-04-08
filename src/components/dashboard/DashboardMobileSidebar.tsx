@@ -21,7 +21,7 @@ const DashboardMobileSidebar = ({ dashboardHome, navItems, userInfo }: Dashboard
     return (
         <div className="flex h-full flex-col overflow-y-auto">
             {/* Logo / Brand */}
-            <div className="flex h-16 items-center border-b px-6">
+            <div className="flex h-16 items-center border-b border-border px-6">
                 <Link href={dashboardHome}>
                     <span className="text-xl font-bold text-primary">Sustainify</span>
                 </Link>

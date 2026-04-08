@@ -16,7 +16,7 @@ export default function UsersManagementPage() {
     total: 0,
     page: 1,
     limit: 12,
-    totalPage: 1,
+    totalPages: 1,
   });
 
   const [filters, setFilters] = useState({
@@ -52,8 +52,8 @@ export default function UsersManagementPage() {
       const result = await getAllUsers(query);
 
       if (result.success && result.data) {
-        setUsers(result.data.data);
-        setPagination(result.data.meta);
+        setUsers(result.data);
+        setPagination(result.meta ?? pagination);
       } else {
         toast.error(result.message || "Failed to fetch users");
       }
@@ -112,7 +112,7 @@ export default function UsersManagementPage() {
           <div className="space-y-2">
             <p className="text-sm text-gray-600 font-medium">Current Page</p>
             <p className="text-2xl font-bold text-gray-900">
-              {pagination.page} / {pagination.totalPage}
+              {pagination.page} / {pagination.totalPages}
             </p>
           </div>
         </Card>
@@ -157,7 +157,7 @@ export default function UsersManagementPage() {
       <AdminUsersList users={users} isLoading={isLoading} onRefresh={handleRefresh} />
 
       {/* Pagination Controls */}
-      {pagination.totalPage > 1 && !isLoading && (
+      {pagination.totalPages > 1 && !isLoading && (
         <div className="flex items-center justify-center gap-2 pt-4">
           <Button
             variant="outline"
@@ -168,14 +168,14 @@ export default function UsersManagementPage() {
           </Button>
 
           <div className="flex items-center gap-2">
-            {Array.from({ length: Math.min(5, pagination.totalPage) }).map((_, idx) => {
+            {Array.from({ length: Math.min(5, pagination.totalPages) }).map((_, idx) => {
               let pageNum;
-              if (pagination.totalPage <= 5) {
+              if (pagination.totalPages <= 5) {
                 pageNum = idx + 1;
               } else if (pagination.page <= 3) {
                 pageNum = idx + 1;
-              } else if (pagination.page >= pagination.totalPage - 2) {
-                pageNum = pagination.totalPage - 4 + idx;
+              } else if (pagination.page >= pagination.totalPages - 2) {
+                pageNum = pagination.totalPages - 4 + idx;
               } else {
                 pageNum = pagination.page - 2 + idx;
               }
@@ -196,7 +196,7 @@ export default function UsersManagementPage() {
           <Button
             variant="outline"
             onClick={() => handlePageChange(pagination.page + 1)}
-            disabled={pagination.page === pagination.totalPage}
+            disabled={pagination.page === pagination.totalPages}
           >
             Next
           </Button>

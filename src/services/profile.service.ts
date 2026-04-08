@@ -12,14 +12,19 @@ const getCookieHeaders = async () => {
   const accessToken = cookieStore.get("accessToken")?.value;
   const refreshToken = cookieStore.get("refreshToken")?.value;
 
+  const cookieParts: string[] = [];
+  if (accessToken) cookieParts.push(`accessToken=${accessToken}`);
+  if (refreshToken) cookieParts.push(`refreshToken=${refreshToken}`);
+
   return {
-    Cookie: `accessToken=${accessToken}; refreshToken=${refreshToken}`,
+    Cookie: cookieParts.join("; "),
   };
 };
 
 // Get user profile (client-side)
 export const getUserProfile = async (): Promise<ApiResponse<UserProfile>> => {
-    return httpClient.get<UserProfile>("/profile");
+    const headers = await getCookieHeaders();
+    return httpClient.get<UserProfile>("/profile", { headers });
 };
 
 // Update user profile (server-side) - All fields optional
@@ -40,6 +45,7 @@ export const updateUserProfile = async (payload: {
     // Revalidate profile-related pages to refresh cached data
     revalidatePath("/profile");
     revalidatePath("/dashboard");
+    revalidatePath("/"); // Update navbar info
 
     return { success: true, message: "Profile updated successfully", data: response.data };
   } catch (error: any) {
@@ -58,7 +64,7 @@ export const prefetchUserProfile = async (accessToken: string): Promise<ApiRespo
                 "Content-Type": "application/json",
                 "Cookie": `accessToken=${accessToken}`,
             },
-            next: { revalidate: 300 } // Revalidate every 5 minutes
+            next: { revalidate: 0 } // Bypass cache to ensure fresh data
         });
 
         if (!res.ok) {

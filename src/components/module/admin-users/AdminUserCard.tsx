@@ -15,6 +15,7 @@ import { Mail, Shield, Trash2, ToggleLeft, ToggleRight, AlertCircle } from "luci
 import { toggleUserStatus, updateUserRole, deleteUser } from "@/services/user.service";
 import { IUser } from "@/types/user.types";
 import { toast } from "sonner";
+import { useUser } from "@/hooks/useUser";
 
 interface AdminUserCardProps {
   user: IUser;
@@ -22,15 +23,22 @@ interface AdminUserCardProps {
 }
 
 export const AdminUserCard: React.FC<AdminUserCardProps> = ({ user, onRefresh }) => {
+  const { user: currentUser } = useUser();
+  const isSelf = currentUser?.id === user.id;
   const [isLoadingStatus, setIsLoadingStatus] = useState(false);
   const [isLoadingRole, setIsLoadingRole] = useState(false);
   const [isLoadingDelete, setIsLoadingDelete] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleToggleStatus = async () => {
+    if (isSelf) {
+      toast.error("You cannot change your own active status");
+      return;
+    }
+
     setIsLoadingStatus(true);
     try {
-      const result = await toggleUserStatus(user.id);
+      const result = await toggleUserStatus(user.id, !user.isActive);
       if (result.success) {
         toast.success(result.message);
         onRefresh();
@@ -43,6 +51,11 @@ export const AdminUserCard: React.FC<AdminUserCardProps> = ({ user, onRefresh })
   };
 
   const handleRoleChange = async (newRole: string) => {
+    if (isSelf) {
+      toast.error("You cannot change your own role");
+      return;
+    }
+
     setIsLoadingRole(true);
     try {
       const result = await updateUserRole(user.id, newRole as "ADMIN" | "MEMBER");
@@ -58,6 +71,12 @@ export const AdminUserCard: React.FC<AdminUserCardProps> = ({ user, onRefresh })
   };
 
   const handleDelete = async () => {
+    if (isSelf) {
+      toast.error("You cannot delete your own account");
+      setShowDeleteConfirm(false);
+      return;
+    }
+
     setIsLoadingDelete(true);
     try {
       const result = await deleteUser(user.id);
@@ -177,7 +196,7 @@ export const AdminUserCard: React.FC<AdminUserCardProps> = ({ user, onRefresh })
               <Select
                 value={user.role}
                 onValueChange={handleRoleChange}
-                disabled={isLoadingRole}
+                disabled={isLoadingRole || isSelf}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue />
@@ -197,7 +216,7 @@ export const AdminUserCard: React.FC<AdminUserCardProps> = ({ user, onRefresh })
                 size="sm"
                 className="flex-1"
                 onClick={handleToggleStatus}
-                disabled={isLoadingStatus}
+                disabled={isLoadingStatus || isSelf}
               >
                 {isLoadingStatus ? (
                   <span className="opacity-50 flex items-center gap-2">
@@ -222,7 +241,7 @@ export const AdminUserCard: React.FC<AdminUserCardProps> = ({ user, onRefresh })
                 variant="destructive"
                 size="sm"
                 onClick={() => setShowDeleteConfirm(true)}
-                disabled={isLoadingDelete}
+                disabled={isLoadingDelete || isSelf}
               >
                 {isLoadingDelete ? (
                   <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useVote, useFavorite } from "@/hooks/useVote";
+import { useVote, useFavourite } from "@/hooks/useVote";
 import { Button } from "@/components/ui/button";
 import { ArrowUp, ArrowDown, Heart } from "lucide-react";
 import { IIdea } from "@/types/idea.types";
@@ -25,7 +25,7 @@ export default function VotingControls({
   const [localFavorite, setLocalFavorite] = useState(isFavorite);
 
   const voteMutation = useVote(idea.id);
-  const favoriteMutation = useFavorite(idea.id);
+  const favoriteMutation = useFavourite(idea.id);
 
   const handleVote = async (type: "UP" | "DOWN") => {
     voteMutation.mutate(type, {

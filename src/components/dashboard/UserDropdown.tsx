@@ -6,6 +6,7 @@ import { UserInfo } from "@/types/user.types"
 import { Key, LogOut, User } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 
 interface UserDropdownProps {
     userInfo: UserInfo
@@ -13,6 +14,7 @@ interface UserDropdownProps {
 
 const UserDropdown = ({ userInfo }: UserDropdownProps) => {
     const router = useRouter();
+    const queryClient = useQueryClient();
 
     const handleLogout = async () => {
         try {
@@ -20,6 +22,8 @@ const UserDropdown = ({ userInfo }: UserDropdownProps) => {
                 method: "POST",
             });
             if (res.ok) {
+                // Clear all cached queries so UI immediately reflects logged-out state
+                queryClient.clear();
                 router.push("/login");
                 router.refresh();
             }

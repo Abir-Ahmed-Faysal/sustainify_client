@@ -15,7 +15,8 @@ import {
 import { IIdea, IIdeaUpdate } from "@/types/idea.types";
 import { ICategory } from "@/types/category.types";
 import { toast } from "sonner";
-import CloudinaryImageUploader from "./CloudinaryImageUploader";
+import CloudinaryImageUploader from "@/components/shared/CloudinaryImageUploader";
+import { rollbackUploadedImages } from "@/services/cloudinary.service";
 
 interface EditIdeaFormProps {
   initialIdea: IIdea | null;
@@ -65,6 +66,10 @@ export default function EditIdeaForm({
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isUploadingAttachments, setIsUploadingAttachments] = useState(false);
 
+  // Track initial images for rollback
+  const [initialImage] = useState(initialIdea?.image || undefined);
+  const [initialAttachments] = useState(initialIdea?.attachments || []);
+
   // ── Mutation: save content only ────────────────────────────────────────────
   const saveMutation = useMutation({
     mutationFn: (payload: IIdeaUpdate) => updateIdea(ideaId, payload),
@@ -78,12 +83,16 @@ export default function EditIdeaForm({
       } else {
         setError(data.message || "Failed to save idea");
         toast.error(data.message || "Failed to save idea");
+        // Rollback images on failure
+        performRollback();
       }
     },
     onError: (err: any) => {
       const msg = err.message || "An error occurred";
       setError(msg);
       toast.error(msg);
+      // Rollback images on error
+      performRollback();
     },
   });
 
@@ -105,16 +114,45 @@ export default function EditIdeaForm({
       } else {
         setError(data.message || "Failed to submit idea");
         toast.error(data.message || "Failed to submit idea");
+        // Rollback images on failure
+        performRollback();
       }
     },
     onError: (err: any) => {
       const msg = err.message || "An error occurred";
       setError(msg);
       toast.error(msg);
+      // Rollback images on error
+      performRollback();
     },
   });
 
   const isPending = saveMutation.isPending || submitMutation.isPending || isUploadingImage || isUploadingAttachments;
+
+  // ── Rollback handler ────────────────────────────────────────────────────────
+  const performRollback = async () => {
+    const urlsToDelete: string[] = [];
+    
+    // Collect newly uploaded image
+    if (formData.image && formData.image !== initialImage) {
+      urlsToDelete.push(formData.image);
+    }
+    
+    // Collect newly uploaded attachments
+    if (formData.attachments && formData.attachments.length > 0) {
+      formData.attachments.forEach((url) => {
+        if (!initialAttachments.includes(url)) {
+          urlsToDelete.push(url);
+        }
+      });
+    }
+
+    if (urlsToDelete.length > 0) {
+      await rollbackUploadedImages(urlsToDelete, (rollbackError) => {
+        console.warn("Rollback warning:", rollbackError);
+      });
+    }
+  };
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -241,7 +279,7 @@ export default function EditIdeaForm({
       {currentStatus === "REJECTED" && initialIdea?.feedback && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-6">
           <p className="text-sm font-semibold text-red-700 dark:text-red-400 mb-1 flex items-center gap-1.5">
-            <AlertCircle className="w-4 h-4" /> Admin Feedback
+            <AlertCircle className="w-4 h-4 shrink-0" /> Admin Feedback
           </p>
           <p className="text-sm text-red-600 dark:text-red-300 leading-relaxed">
             {initialIdea.feedback}
@@ -254,13 +292,13 @@ export default function EditIdeaForm({
           {/* Error / Success */}
           {error && (
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300 p-4 rounded-xl flex items-start gap-2.5 text-sm">
-              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
               {error}
             </div>
           )}
           {success && (
             <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 p-4 rounded-xl flex items-start gap-2.5 text-sm">
-              <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <CheckCircle className="w-4 h-4 mt-0.5 shrink-0" />
               Redirecting…
             </div>
           )}
@@ -339,9 +377,9 @@ export default function EditIdeaForm({
           {/* ── Image Upload ───────────────────────────────────────── */}
           <Field label="Cover Image" hint="Optional cover image for your idea">
             <CloudinaryImageUploader
-              multiple={false}
-              value={formData.image ? [formData.image] : []}
-              onChange={(urls) => setFormData(prev => ({ ...prev, image: urls[0] || undefined }))}
+              mode="single"
+              value={formData.image}
+              onChange={(url) => setFormData(prev => ({ ...prev, image: typeof url === 'string' ? url : url[0] || undefined }))}
               onUploadingChange={setIsUploadingImage}
             />
           </Field>
@@ -349,9 +387,9 @@ export default function EditIdeaForm({
           {/* ── Attachments Upload ─────────────────────────────────── */}
           <Field label="Additional Attachments" hint="Optional multiple images (max 5)">
             <CloudinaryImageUploader
-              multiple={true}
+              mode="multiple"
               value={formData.attachments || []}
-              onChange={(urls) => setFormData(prev => ({ ...prev, attachments: urls }))}
+              onChange={(urls) => setFormData(prev => ({ ...prev, attachments: Array.isArray(urls) ? urls : [urls] }))}
               onUploadingChange={setIsUploadingAttachments}
               maxFiles={5}
             />

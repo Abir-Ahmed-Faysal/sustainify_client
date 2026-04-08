@@ -8,11 +8,20 @@ import { ICategory } from "@/types/category.types";
 import { deleteCategory } from "@/services/category.service";
 import { toast } from "sonner";
 
+interface PaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 interface CategoryListProps {
   categories: ICategory[];
   onEdit: (category: ICategory) => void;
   onDelete: () => void;
   isLoading?: boolean;
+  pagination?: PaginationMeta;
+  onPageChange?: (page: number) => void;
 }
 
 export const CategoryList: React.FC<CategoryListProps> = ({
@@ -20,6 +29,8 @@ export const CategoryList: React.FC<CategoryListProps> = ({
   onEdit,
   onDelete,
   isLoading = false,
+  pagination,
+  onPageChange,
 }) => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -141,6 +152,48 @@ export const CategoryList: React.FC<CategoryListProps> = ({
           </div>
         ))}
       </div>
+
+      {/* Pagination Controls */}
+      {pagination && pagination.totalPages > 1 && (
+        <div className="flex items-center justify-between mt-6 pt-6 border-t">
+          <div className="text-sm text-muted-foreground">
+            Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
+            {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} categories
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange?.(pagination.page - 1)}
+              disabled={pagination.page === 1 || isLoading}
+            >
+              Previous
+            </Button>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((pageNum) => (
+                <Button
+                  key={pageNum}
+                  variant={pageNum === pagination.page ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => onPageChange?.(pageNum)}
+                  disabled={isLoading}
+                  className="w-8 h-8 p-0"
+                >
+                  {pageNum}
+                </Button>
+              ))}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange?.(pagination.page + 1)}
+              disabled={pagination.page === pagination.totalPages || isLoading}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Prompt */}
       {confirmDeleteId && selectedCategory && (

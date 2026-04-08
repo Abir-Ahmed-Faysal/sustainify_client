@@ -18,6 +18,11 @@ export const getCommonNavItems = (role: UserRole): NavSection[] => {
                     icon: "LayoutDashboard"
                 },
                 {
+                    title: "My Favourites",
+                    href: "/my-favourites",
+                    icon: "Heart"
+                },
+                {
                     title: "My Profile",
                     href: "/profile",
                     icon: "User"
@@ -37,13 +42,18 @@ export const memberNavItems: NavSection[] = [
                 icon: "Lightbulb"
             },
             {
+                title: "Purchased Ideas",
+                href: "/dashboard/purchased-ideas",
+                icon: "ShoppingCart"
+            },
+            {
                 title: "Create Idea",
                 href: "/dashboard/create-idea",
                 icon: "Plus"
             },
             {
                 title: "Browse Ideas",
-                href: "/dashboard/browse-ideas",
+                href: "/ideas",
                 icon: "Search"
             },
         ]
@@ -51,11 +61,6 @@ export const memberNavItems: NavSection[] = [
     {
         title: "Community",
         items: [
-            {
-                title: "Voting Activity",
-                href: "/dashboard/voting-activity",
-                icon: "ThumbsUp"
-            },
             {
                 title: "Blogs",
                 href: "/blog",
@@ -66,6 +71,16 @@ export const memberNavItems: NavSection[] = [
 ];
 
 export const adminNavItems: NavSection[] = [
+    {
+        title: "Platform Management",
+        items: [
+            {
+                title: "Categories",
+                href: "/admin/dashboard/category-management",
+                icon: "Tags"
+            }
+        ]
+    },
     {
         title: "Idea Management",
         items: [

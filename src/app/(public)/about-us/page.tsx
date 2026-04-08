@@ -3,6 +3,9 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { ArrowRight, Leaf, Users, Lightbulb, Globe, Target, Heart } from "lucide-react";
 
+// Revalidate about us page every 24 hours (86400s) - mostly static content
+export const revalidate = 86400;
+
 export default function AboutUsPage() {
   return (
     <div className="flex flex-col w-full">

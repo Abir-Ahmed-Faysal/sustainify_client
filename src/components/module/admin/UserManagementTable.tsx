@@ -1,8 +1,8 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getAllUsers, toggleUserStatus } from "@/services/user.service";
-import { IUser } from "@/types/user.types";
+import { getAllUsers, toggleUserStatus, updateUserRole } from "@/services/user.service";
+import Image from "next/image";
 import {
   Table,
   TableBody,
@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useUser } from "@/hooks/useUser";
 import { format } from "date-fns";
 import {
   DropdownMenu,
@@ -29,38 +30,109 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function UserManagementTable() {
+  const { user: currentUser } = useUser();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
 
   const { data, isLoading } = useQuery({
     queryKey: ["users", { searchTerm }],
-    queryFn: () => getAllUsers({ searchTerm }),
+    queryFn: () => {
+      const query: Record<string, string> = {};
+      if (searchTerm && searchTerm.trim()) {
+        query.searchTerm = searchTerm;
+      }
+      return getAllUsers(query);
+    },
   });
 
-  const mutation = useMutation({
+  const toggleMutation = useMutation({
     mutationFn: ({ userId, isActive }: { userId: string; isActive: boolean }) =>
       toggleUserStatus(userId, isActive),
     onSuccess: (data) => {
       if (data.success) {
-        queryClient.invalidateQueries({ queryKey: ["users"] });
+        queryClient.invalidateQueries({ queryKey: ["users"], exact: false });
         toast.success(data.message);
       } else {
         toast.error(data.message || "Failed to update user status");
       }
     },
+    onError: (error: Error) => {
+      const errorMsg = error instanceof Error ? error.message : "Failed to update user status";
+      toast.error(errorMsg);
+    },
+  });
+
+  const roleMutation = useMutation({
+    mutationFn: ({ userId, role }: { userId: string; role: "ADMIN" | "MEMBER" }) =>
+      updateUserRole(userId, role),
+    onSuccess: (data) => {
+      if (data.success) {
+        queryClient.invalidateQueries({ queryKey: ["users"], exact: false });
+        toast.success(data.message);
+      } else {
+        toast.error(data.message || "Failed to update user role");
+      }
+    },
+    onError: (error: Error) => {
+      const errorMsg = error instanceof Error ? error.message : "Failed to update user role";
+      toast.error(errorMsg);
+    },
   });
 
   const handleToggleStatus = (userId: string, currentStatus: boolean, role: string) => {
+    if (currentUser?.id === userId) {
+      toast.error("You cannot change your own status.");
+      return;
+    }
+
     if (role === "ADMIN") {
       toast.error("Admin accounts cannot be deactivated via this panel.");
       return;
     }
-    mutation.mutate({ userId, isActive: !currentStatus });
+    toggleMutation.mutate({ userId, isActive: !currentStatus });
   };
 
-  const users = data?.data?.data ?? [];
+  const handleRoleChange = (userId: string, newRole: "ADMIN" | "MEMBER") => {
+    if (currentUser?.id === userId) {
+      toast.error("You cannot change your own role.");
+      return;
+    }
+
+    roleMutation.mutate({ userId, role: newRole });
+  };
+
+  const users = data?.data ?? []; 
+
+  const getStatusBadge = (user: { isActive: boolean; isDeleted: boolean }) => {
+    if (user.isDeleted) {
+      return (
+        <Badge variant="destructive" className="border-none opacity-90">
+          Deactivated
+        </Badge>
+      );
+    }
+    if (user.isActive) {
+      return (
+        <Badge className="bg-emerald-100 text-emerald-800 border-none dark:bg-emerald-900/30 dark:text-emerald-400">
+          Active
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800">
+        Inactive
+      </Badge>
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -98,18 +170,33 @@ export default function UserManagementTable() {
               </TableRow>
             ) : users.length > 0 ? (
               users.map((user) => (
-                <TableRow key={user.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                <TableRow
+                  key={user.id}
+                  className={`transition-colors ${
+                    user.isDeleted
+                      ? "opacity-50 bg-red-50/30 dark:bg-red-900/5 hover:opacity-75"
+                      : "hover:bg-slate-50/50 dark:hover:bg-slate-800/50"
+                  }`}
+                >
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <div className="size-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center font-bold text-emerald-700 dark:text-emerald-400 overflow-hidden">
+                      <div className={`size-10 rounded-full flex items-center justify-center font-bold overflow-hidden ${
+                        user.isDeleted
+                          ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
+                          : "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
+                      }`}>
                         {user.profile?.avatar ? (
-                          <img src={user.profile.avatar} alt={user.name} className="size-full object-cover" />
+                          <Image src={user.profile.avatar} alt={user.name} className="size-full object-cover" width={40} height={40} />
                         ) : (
                           user.name.charAt(0).toUpperCase()
                         )}
                       </div>
                       <div className="flex flex-col">
-                        <span className="font-semibold text-slate-900 dark:text-white leading-none mb-1">
+                        <span className={`font-semibold leading-none mb-1 ${
+                          user.isDeleted
+                            ? "text-slate-500 line-through dark:text-slate-500"
+                            : "text-slate-900 dark:text-white"
+                        }`}>
                           {user.name}
                         </span>
                         <span className="text-xs text-slate-500 flex items-center gap-1">
@@ -136,15 +223,7 @@ export default function UserManagementTable() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {user.isActive ? (
-                      <Badge className="bg-emerald-100 text-emerald-800 border-none dark:bg-emerald-900/30 dark:text-emerald-400">
-                        Active
-                      </Badge>
-                    ) : (
-                      <Badge variant="destructive" className="border-none opacity-80">
-                        Suspended
-                      </Badge>
-                    )}
+                    {getStatusBadge(user)}
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
@@ -153,18 +232,46 @@ export default function UserManagementTable() {
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuContent align="end" className="w-56">
                         <DropdownMenuLabel>Manage Account</DropdownMenuLabel>
                         <DropdownMenuSeparator />
+                        
+                        {/* Role Selection */}
+                        <div className="px-2 py-1.5">
+                          <p className="text-xs font-semibold text-gray-600 mb-1.5">Change Role</p>
+                          <Select
+                            value={user.role}
+                            onValueChange={(newRole) => handleRoleChange(user.id, newRole as "ADMIN" | "MEMBER")}
+                            disabled={roleMutation.isPending || currentUser?.id === user.id}
+                          >
+                            <SelectTrigger className="w-full h-8 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="ADMIN">Admin</SelectItem>
+                              <SelectItem value="MEMBER">Member</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <DropdownMenuSeparator />
+                        
+                        {/* Status Toggle */}
                         <DropdownMenuItem 
                           className="cursor-pointer"
                           onClick={() => handleToggleStatus(user.id, user.isActive, user.role)}
-                          disabled={mutation.isPending || user.role === "ADMIN"}
+                          disabled={
+                            toggleMutation.isPending ||
+                            user.role === "ADMIN" ||
+                            user.id === currentUser?.id
+                          }
                         >
-                          {user.isActive ? (
+                          {toggleMutation.isPending ? (
+                            <><div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" /> Updating...</>
+                          ) : user.isActive && !user.isDeleted ? (
                             <><UserX className="size-4 mr-2 text-red-500" /> Deactivate Account</>
                           ) : (
-                            <><UserCheck className="size-4 mr-2 text-emerald-500" /> Activate Account</>
+                            <><UserCheck className="size-4 mr-2 text-emerald-500" /> Reactivate Account</>
                           )}
                         </DropdownMenuItem>
                       </DropdownMenuContent>

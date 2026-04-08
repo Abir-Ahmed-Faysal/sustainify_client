@@ -12,16 +12,25 @@ import { cookies } from "next/headers";
 
 export const adminDashboardIdeas = async (filters: IIdeaQuery = {}): Promise<ApiResponse<IIdea[]>> => {
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-  const queryString = new URLSearchParams(filters as Record<string, string>).toString();
-  const url = `${baseUrl}/ideas?${queryString}`;
+  const cleanFilters: Record<string, string> = {};
+  for (const [key, value] of Object.entries(filters)) {
+    if (value !== undefined && value !== null && value !== "") {
+      cleanFilters[key] = String(value);
+    }
+  }
+  const queryString = new URLSearchParams(cleanFilters).toString();
+  const url = `${baseUrl}/ideas/admin/all?${queryString}`;
 
+  const headers = await getCookieHeaders();
   const res = await fetch(url, {
-
-    next: { revalidate: 60 }
+    headers: {
+      ...headers,
+    },
+    cache: "no-store"
   });
 
   if (!res.ok) {
-    throw new Error("Failed to prefetch ideas");
+    throw new Error("Failed to prefetch admin ideas");
   }
 
   return res.json();
@@ -34,14 +43,48 @@ export const adminDashboardIdeas = async (filters: IIdeaQuery = {}): Promise<Api
 
 
 
-// For Server Component Prefetching (Node.js fetch)
-export const prefetchIdeas = async (filters: IIdeaQuery = {}): Promise<ApiResponse<IIdea[]>> => {
+// For Public Server Component Prefetching (No Cookies - Build Safe for ISR)
+export const getPublicIdeas = async (filters: IIdeaQuery = {}): Promise<ApiResponse<IIdea[]>> => {
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-  const queryString = new URLSearchParams(filters as Record<string, string>).toString();
+  const cleanFilters: Record<string, string> = {};
+  for (const [key, value] of Object.entries(filters)) {
+    if (value !== undefined && value !== null && value !== "") {
+      cleanFilters[key] = String(value);
+    }
+  }
+  const queryString = new URLSearchParams(cleanFilters).toString();
   const url = `${baseUrl}/ideas?${queryString}`;
 
   const res = await fetch(url, {
-    next: { revalidate: 60 }
+    next: { revalidate: 60 }, // Enable ISR
+    // We explicitly omit cookies here to ensure this can be used in static/ISR pages
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch public ideas");
+  }
+
+  return res.json();
+};
+
+// For Server Component Prefetching (Legacy - Note: uses cookies, not for static pages)
+export const prefetchIdeas = async (filters: IIdeaQuery = {}): Promise<ApiResponse<IIdea[]>> => {
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+  const cleanFilters: Record<string, string> = {};
+  for (const [key, value] of Object.entries(filters)) {
+    if (value !== undefined && value !== null && value !== "") {
+      cleanFilters[key] = String(value);
+    }
+  }
+  const queryString = new URLSearchParams(cleanFilters).toString();
+  const url = `${baseUrl}/ideas?${queryString}`;
+
+  const headers = await getCookieHeaders();
+  const res = await fetch(url, {
+    headers: {
+      ...headers,
+    },
+    cache: "no-store"
   });
 
   if (!res.ok) {
@@ -57,8 +100,12 @@ const getCookieHeaders = async () => {
   const accessToken = cookieStore.get("accessToken")?.value;
   const refreshToken = cookieStore.get("refreshToken")?.value;
 
+  const cookieParts: string[] = [];
+  if (accessToken) cookieParts.push(`accessToken=${accessToken}`);
+  if (refreshToken) cookieParts.push(`refreshToken=${refreshToken}`);
+
   return {
-    Cookie: `accessToken=${accessToken}; refreshToken=${refreshToken}`,
+    Cookie: cookieParts.join("; "),
   };
 };
 
@@ -81,6 +128,33 @@ export const getIdeaById = async (
   }
 };
 
+// GET: Get admin-specific idea by ID (Unlimited access for admins)
+export const getAdminIdeaById = async (
+  id: string
+): Promise<ApiResponse<IIdea | null>> => {
+  try {
+    const accessToken = (await cookies()).get("accessToken")?.value;
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+    const url = `${baseUrl}/ideas/admin/${id}`;
+
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`, // Optional, though cookies are usually enough
+        Cookie: `accessToken=${accessToken}`,
+      },
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      throw new Error("Failed to fetch admin idea details");
+    }
+
+    return res.json();
+  } catch (error: any) {
+    return { success: false, message: error?.message || "External server error", data: null };
+  }
+};
+
 // GET: Get specific idea belonging to current user
 export const getMyIdeaById = async (
   id: string
@@ -88,7 +162,7 @@ export const getMyIdeaById = async (
   try {
     const headers = await getCookieHeaders();
 
-    const response = await httpClient.get<IIdea>(`/ideas/my-idea/${id}`, { headers });
+    const response = await httpClient.get<IIdea>(`/ideas/my-Idea/${id}`, { headers });
 
     if (!response.data) {
       return { success: false, message: "Idea not found", data: null };
@@ -147,7 +221,7 @@ export const changeIdeaStatus = async (
   try {
     const headers = await getCookieHeaders();
 
-    const response = await httpClient.patch<IIdea>(`/ideas/${id}`, { status }, { headers });
+    const response = await httpClient.patch<IIdea>(`/ideas/status/${id}`, { status }, { headers });
 
     if (!response.data) {
       return { success: false, message: "Failed to change idea status", data: null };
@@ -187,13 +261,39 @@ export const getMyIdeas = async (): Promise<ApiResponse<IIdea[] | null>> => {
   }
 };
 
+type IPurchasedAccess = {
+  id: string;
+  userId: string;
+  ideaId: string;
+  createdAt: string;
+  updatedAt: string;
+  idea?: IIdea;
+};
+
+export const getMyPurchasedIdeas = async (): Promise<ApiResponse<IIdea[] | null>> => {
+  try {
+    const headers = await getCookieHeaders();
+    console.log(headers, "from the headrs")
+
+    const response = await httpClient.get<IPurchasedAccess[]>("/ideas/my-purchased-ideas", { headers });
+
+    const purchasedIdeas = (response.data || [])
+      .map((record) => record.idea)
+      .filter((idea): idea is IIdea => Boolean(idea));
+
+    return { success: true, message: "My purchased ideas fetched successfully", data: purchasedIdeas };
+  } catch (error: any) {
+    return { success: false, message: error?.message || "External server error", data: null };
+  }
+};
+
 
 // VOTING: Upvote an idea
 export const upvoteIdea = async (ideaId: string): Promise<ApiResponse<any>> => {
   try {
     const headers = await getCookieHeaders();
 
-    const response = await httpClient.post("/votes", { ideaId, voteType: "UPVOTE" }, { headers });
+    const response = await httpClient.post("/votes", { ideaId, type: "UP" }, { headers });
 
     return { success: true, message: "Upvoted successfully", data: response.data || null };
   } catch (error: any) {
@@ -206,7 +306,7 @@ export const downvoteIdea = async (ideaId: string): Promise<ApiResponse<any>> =>
   try {
     const headers = await getCookieHeaders();
 
-    const response = await httpClient.post("/votes", { ideaId, voteType: "DOWNVOTE" }, { headers });
+    const response = await httpClient.post("/votes", { ideaId, type: "DOWN" }, { headers });
 
     return { success: true, message: "Downvoted successfully", data: response.data || null };
   } catch (error: any) {
@@ -238,7 +338,7 @@ export const toggleIdeaFeatured = async (
     const headers = await getCookieHeaders();
 
     const response = await httpClient.patch<IIdea>(
-      `/ideas/${ideaId}`,
+      `/ideas/toggle-isFeatured/${ideaId}`,
       { isFeatured },
       { headers }
     );
@@ -271,7 +371,7 @@ export const updateIdeaStatusByAdmin = async (
     const headers = await getCookieHeaders();
 
     const response = await httpClient.patch<IIdea>(
-      `/ideas/${ideaId}`,
+      `/ideas/status/admin/${ideaId}`,
       payload,
       { headers }
     );
@@ -306,8 +406,12 @@ export const getIdeasByStatus = async (
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
     const url = `${baseUrl}/ideas?status=${status}`;
 
+    const headers = await getCookieHeaders();
     const res = await fetch(url, {
-      next: { revalidate: 60 }
+      headers: {
+        ...headers,
+      },
+      cache: "no-store"
     });
 
     if (!res.ok) {

@@ -3,29 +3,66 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { httpClient } from "@/lib/axios/httpClient";
 import { ApiResponse } from "@/types/api.types";
-import { IUser, IUserListResponse } from "@/types/user.types";
+import { IUser } from "@/types/user.types";
 import { cookies } from "next/headers";
+
+// GET: Get all users (Build-safe version for public pre-rendering or ISR)
+export const getPublicUsers = async (
+  query: Record<string, string> = {}
+): Promise<ApiResponse<IUser[]>> => {
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+  const queryString = new URLSearchParams(query).toString();
+  const url = `${baseUrl}/users/public?${queryString}`;
+
+  try {
+    const res = await fetch(url, {
+      next: { revalidate: 60 },
+      // Omit cookies to prevent dynamic server usage error during build
+    });
+
+    if (!res.ok) {
+      throw new Error("Failed to fetch public users");
+    }
+
+    return res.json();
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.message || "Failed to fetch public users",
+      data: [],
+      meta: { total: 0, page: 1, limit: 10, totalPages: 0 },
+    };
+  }
+};
 
 const getCookieHeaders = async () => {
   const cookieStore = await cookies();
   const accessToken = cookieStore.get("accessToken")?.value;
   const refreshToken = cookieStore.get("refreshToken")?.value;
 
+  const cookieParts: string[] = [];
+  if (accessToken) cookieParts.push(`accessToken=${accessToken}`);
+  if (refreshToken) cookieParts.push(`refreshToken=${refreshToken}`);
+
   return {
-    Cookie: `accessToken=${accessToken}; refreshToken=${refreshToken}`,
+    Cookie: cookieParts.join("; "),
   };
 };
 
 // GET: Get all users with pagination, search, and filter
 export const getAllUsers = async (
   query: Record<string, string> = {}
-): Promise<ApiResponse<IUserListResponse>> => {
+): Promise<ApiResponse<IUser[]>> => {
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
   const queryString = new URLSearchParams(query).toString();
   const url = `${baseUrl}/users?${queryString}`;
 
   try {
+    const headers = await getCookieHeaders();
     const res = await fetch(url, {
+      headers: {
+        ...headers,
+      },
       next: { revalidate: 60 },
     });
 
@@ -38,7 +75,8 @@ export const getAllUsers = async (
     return {
       success: false,
       message: error?.message || "Failed to fetch users",
-      data: { data: [], meta: { total: 0, page: 1, limit: 10, totalPage: 0 } },
+      data: [],
+      meta: { total: 0, page: 1, limit: 10, totalPages: 0 },
     };
   }
 };
@@ -70,7 +108,7 @@ export const toggleUserStatus = async (
     const headers = await getCookieHeaders();
 
     const response = await httpClient.patch<IUser>(
-      `/users/${userId}/toggle-status`,
+      `/admin/users/${userId}/status`,
       { isActive },
       { headers }
     );
@@ -102,7 +140,7 @@ export const updateUserRole = async (
     const headers = await getCookieHeaders();
 
     const response = await httpClient.patch<IUser>(
-      `/users/${userId}/role`,
+      `/admin/users/${userId}/role`,
       { role },
       { headers }
     );
@@ -126,7 +164,7 @@ export const deleteUser = async (userId: string): Promise<ApiResponse<null>> => 
   try {
     const headers = await getCookieHeaders();
 
-    await httpClient.delete(`/users/${userId}`, { headers });
+    await httpClient.delete(`/admin/users/${userId}`, { headers });
 
     return {
       success: true,

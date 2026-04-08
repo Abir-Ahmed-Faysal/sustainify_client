@@ -80,9 +80,6 @@ export const AdvancedSort: React.FC<AdvancedSortProps> = ({
     }
   };
 
-  const currentLabel =
-    SORT_OPTIONS.find((opt) => opt.value === currentSort)?.label || "Sort";
-
   return (
     <div className="space-y-2">
       <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">

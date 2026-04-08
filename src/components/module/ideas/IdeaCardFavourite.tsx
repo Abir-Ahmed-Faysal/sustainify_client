@@ -6,9 +6,13 @@ import { getUserInfo } from "@/services/auth.service";
 
 interface IdeaCardFavouriteProps {
   ideaId: string;
+  onToggle?: (isFavourited: boolean) => void;
 }
 
-export default function IdeaCardFavourite({ ideaId }: IdeaCardFavouriteProps) {
+export default function IdeaCardFavourite({ 
+  ideaId, 
+  onToggle 
+}: IdeaCardFavouriteProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -38,6 +42,7 @@ export default function IdeaCardFavourite({ ideaId }: IdeaCardFavouriteProps) {
       ideaId={ideaId}
       isAuthenticated={isAuthenticated}
       size="sm"
+      onToggle={onToggle}
     />
   );
 }

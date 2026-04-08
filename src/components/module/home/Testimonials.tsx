@@ -64,6 +64,7 @@ export default function Testimonials({ ideas }: TestimonialsProps) {
                       src={idea.author.profile.avatar} 
                       alt={idea.author.name} 
                       fill 
+                      sizes="48px"
                       className="object-cover rounded-2xl" 
                     />
                   ) : (

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { UploadCloud, X, Loader2, Image as ImageIcon } from "lucide-react";
+import { UploadCloud, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface CloudinaryImageUploaderProps {
@@ -55,16 +55,17 @@ export default function CloudinaryImageUploader({
       }
 
       const data = await res.json();
-      const uploadedUrls = data.files.map((file: any) => file.url);
+      const uploadedUrls = data.files.map((file: { url: string }) => file.url);
       
       if (multiple) {
         onChange([...value, ...uploadedUrls]);
       } else {
         onChange([uploadedUrls[0]]);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Image upload failed";
       console.error(error);
-      toast.error(error.message || "Image upload failed");
+      toast.error(message);
     } finally {
       handleUploadingState(false);
       // Reset input so the same file could be selected again if needed

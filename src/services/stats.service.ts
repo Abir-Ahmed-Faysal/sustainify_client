@@ -15,9 +15,13 @@ export const getStats = async (): Promise<ApiResponse<DashboardStats|IMemberStat
         const accessToken = cookieStore.get("accessToken")?.value;
         const refreshToken = cookieStore.get("refreshToken")?.value;
 
+        const cookieParts: string[] = [];
+        if (accessToken) cookieParts.push(`accessToken=${accessToken}`);
+        if (refreshToken) cookieParts.push(`refreshToken=${refreshToken}`);
+
         const response = await httpClient.get<DashboardStats>('/stats', {
             headers: {
-                Cookie: `accessToken=${accessToken}; refreshToken=${refreshToken}`,
+                Cookie: cookieParts.join("; "),
             }
         })
 

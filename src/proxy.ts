@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import { envVars } from "./config/env";
 import {
   getDefaultDashboardRoute,
   getRouteOwner,
   isAuthRoute,
   UserRole,
 } from "./lib/authUtils";
-import { jwtUtils } from "./lib/jwtUtils";
 import { getAuthCookieOptions, isTokenExpiringSoon } from "./lib/tokenUtils";
 import { getNewTokensWithRefreshToken, TokenResponse } from "./services/auth.service";
 

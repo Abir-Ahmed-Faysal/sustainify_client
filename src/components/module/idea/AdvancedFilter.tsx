@@ -51,13 +51,18 @@ export const AdvancedFilter: React.FC<AdvancedFilterProps> = ({
   const [filters, setFilters] = useState<FilterState>({});
   const [hasActiveFilters, setHasActiveFilters] = useState(false);
 
-  const handleFilterChange = (key: keyof FilterState, value: any) => {
+  const handleFilterChange = (key: keyof FilterState, value: string | number | undefined) => {
     setFilters((prev) => {
       const updated = { ...prev };
       if (value === "" || value === null || value === undefined) {
         delete updated[key];
       } else {
-        updated[key] = value;
+        // Type numeric fields as numbers, string fields as strings
+        if (key === "minVotes" || key === "maxVotes") {
+          updated[key] = typeof value === "string" ? Number(value) : value;
+        } else {
+          updated[key] = String(value);
+        }
       }
       return updated;
     });

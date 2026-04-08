@@ -12,7 +12,6 @@ export default function PaymentSuccessPage() {
   const [isRedirecting, setIsRedirecting] = useState(false);
 
   const ideaId = searchParams.get("ideaId");
-  const sessionId = searchParams.get("session_id");
 
   useEffect(() => {
     // Auto-redirect after 3 seconds

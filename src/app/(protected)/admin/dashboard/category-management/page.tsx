@@ -3,13 +3,14 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { Plus, RefreshCw, Loader2 } from "lucide-react";
 import { ICategory } from "@/types/category.types";
-import { getCategories } from "@/services/category.service";
+import { getCategories, GetCategoriesParams } from "@/services/category.service";
 import CategoryForm from "@/components/module/category/CategoryForm";
 import CategoryList from "@/components/module/category/CategoryList";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
 
 interface SheetState {
   isOpen: boolean;
@@ -17,8 +18,21 @@ interface SheetState {
   category: ICategory | null;
 }
 
+interface PaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export default function CategoryManagementPage() {
   const [categories, setCategories] = useState<ICategory[]>([]);
+  const [pagination, setPagination] = useState<PaginationMeta>({
+    total: 0,
+    page: 1,
+    limit: 10,
+    totalPages: 0,
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -27,38 +41,63 @@ export default function CategoryManagementPage() {
     mode: "create",
     category: null,
   });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   // Fetch categories
-  const fetchCategories = useCallback(async (showRefreshToast = false) => {
-    try {
-      if (showRefreshToast) {
-        setIsRefreshing(true);
-      } else {
-        setIsLoading(true);
-      }
-
-      const response = await getCategories();
-
-      if (response.success) {
-        setCategories(response.data || []);
+  const fetchCategories = useCallback(
+    async (pageNum = 1, showRefreshToast = false) => {
+      try {
         if (showRefreshToast) {
-          toast.success("Categories refreshed successfully");
+          setIsRefreshing(true);
+        } else {
+          setIsLoading(true);
         }
-      } else {
-        toast.error(response.message || "Failed to fetch categories");
+
+        const params: GetCategoriesParams = {
+          page: pageNum,
+          limit: 10,
+          searchTerm: debouncedSearchTerm || undefined,
+          sortBy: "createdAt",
+          sortOrder: "desc",
+        };
+
+        const response = await getCategories(params);
+
+        if (response.success) {
+          setCategories(response.data || []);
+          if (response.meta) {
+            setPagination(response.meta);
+          }
+          if (showRefreshToast) {
+            toast.success("Categories refreshed successfully");
+          }
+        } else {
+          toast.error(response.message || "Failed to fetch categories");
+        }
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : "Failed to fetch categories";
+        toast.error(errorMessage);
+      } finally {
+        setIsLoading(false);
+        setIsRefreshing(false);
       }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to fetch categories";
-      toast.error(errorMessage);
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  }, []);
+    },
+    [debouncedSearchTerm]
+  );
 
   // Initial fetch
   useEffect(() => {
-    fetchCategories();
+    fetchCategories(1);
   }, [fetchCategories]);
 
   // Handle create
@@ -84,7 +123,7 @@ export default function CategoryManagementPage() {
   // Handle form success
   const handleFormSuccess = () => {
     setSheetOpen(false);
-    fetchCategories(true);
+    fetchCategories(1, true);
   };
 
   // Handle form cancel
@@ -94,7 +133,12 @@ export default function CategoryManagementPage() {
 
   // Handle refresh
   const handleRefresh = () => {
-    fetchCategories(true);
+    fetchCategories(pagination.page, true);
+  };
+
+  // Handle page change
+  const handlePageChange = (newPage: number) => {
+    fetchCategories(newPage);
   };
 
   return (
@@ -130,6 +174,9 @@ export default function CategoryManagementPage() {
               </Button>
             </SheetTrigger>
             <SheetContent className="w-full sm:max-w-md">
+              <SheetTitle>
+                {sheetState.mode === "create" ? "Create Category" : "Edit Category"}
+              </SheetTitle>
               <CategoryForm
                 category={sheetState.category || undefined}
                 onSuccess={handleFormSuccess}
@@ -140,6 +187,19 @@ export default function CategoryManagementPage() {
         </div>
       </div>
 
+      {/* Search Bar */}
+      <Card>
+        <CardContent className="pt-6">
+          <Input
+            placeholder="Search categories..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            disabled={isLoading}
+            className="max-w-sm"
+          />
+        </CardContent>
+      </Card>
+
       {/* Categories Card */}
       <Card>
         <CardHeader>
@@ -149,8 +209,10 @@ export default function CategoryManagementPage() {
           <CategoryList
             categories={categories}
             onEdit={handleEdit}
-            onDelete={fetchCategories}
+            onDelete={() => fetchCategories(pagination.page)}
             isLoading={isLoading}
+            pagination={pagination}
+            onPageChange={handlePageChange}
           />
         </CardContent>
       </Card>

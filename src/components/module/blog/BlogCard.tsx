@@ -1,7 +1,7 @@
 import { IBlog } from "@/types/blog.types";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Eye, Calendar, User } from "lucide-react";
+import { Eye, Calendar } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -12,7 +12,7 @@ interface BlogCardProps {
 }
 
 export default function BlogCard({ blog }: BlogCardProps) {
-  const { id, title, slug, image, author, createdAt, content } = blog;
+  const { title, slug, image, author, createdAt, content } = blog;
   const isValidImage = isValidImageUrl(image);
   const placeholderGradient = getPlaceholderGradient(title);
 
@@ -58,7 +58,7 @@ export default function BlogCard({ blog }: BlogCardProps) {
         <div className="flex items-center gap-2 text-xs text-slate-500">
           <div className="relative size-6 rounded-full overflow-hidden bg-slate-200">
             {author.profile?.avatar ? (
-              <Image src={author.profile.avatar} alt={author.name} fill className="object-cover" />
+              <Image src={author.profile.avatar} alt={author.name} fill sizes="24px" className="object-cover" />
             ) : (
               <div className="flex items-center justify-center h-full text-[10px] font-bold text-slate-400">
                 {author.name.charAt(0)}

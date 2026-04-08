@@ -10,6 +10,8 @@ import { ICategory } from "@/types/category.types";
 import { createCategory, updateCategory } from "@/services/category.service";
 import { createCategoryZodSchema, updateCategoryZodSchema } from "@/zod/category.zod";
 import { toast } from "sonner";
+import CloudinaryImageUploader from "@/components/shared/CloudinaryImageUploader";
+import { rollbackUploadedImages } from "@/services/cloudinary.service";
 
 interface CategoryFormProps {
   category?: ICategory;
@@ -24,11 +26,13 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
 }) => {
   const isEditing = !!category;
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: category?.name || "",
     image: category?.image || "",
   });
+  const [previousImage, setPreviousImage] = useState(category?.image || "");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validateForm = (data: typeof formData) => {
@@ -60,6 +64,15 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
     }
   };
 
+  const handleImageChange = (value: string | string[]) => {
+    const imageUrl = Array.isArray(value) ? value[0] : value;
+    setFormData((prev) => ({ ...prev, image: imageUrl }));
+    // Clear image error when user uploads
+    if (errors.image) {
+      setErrors((prev) => ({ ...prev, image: "" }));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -81,19 +94,36 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
 
       if (result.success && result.data) {
         toast.success(result.message);
+        setPreviousImage(formData.image);
         onSuccess?.(result.data);
       } else {
         setGlobalError(result.message || "An error occurred");
         toast.error(result.message || "An error occurred");
+
+        // Rollback uploaded images if submission failed
+        if (formData.image && formData.image !== previousImage) {
+          await rollbackUploadedImages([formData.image], (error) => {
+            console.warn("Rollback warning:", error);
+          });
+        }
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
       setGlobalError(errorMessage);
       toast.error(errorMessage);
+
+      // Rollback uploaded images if submission failed
+      if (formData.image && formData.image !== previousImage) {
+        await rollbackUploadedImages([formData.image], (error) => {
+          console.warn("Rollback warning:", error);
+        });
+      }
     } finally {
       setIsLoading(false);
     }
   };
+
+  const isSubmitDisabled = isLoading || isUploadingImage;
 
   return (
     <div className="w-full max-w-md">
@@ -128,7 +158,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
               placeholder="e.g., Solar Energy"
               value={formData.name}
               onChange={(e) => handleInputChange("name", e.target.value)}
-              disabled={isLoading}
+              disabled={isSubmitDisabled}
               className="h-10"
               aria-invalid={!!errors.name}
             />
@@ -139,29 +169,22 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
             )}
           </div>
 
-          {/* Image URL Field */}
+          {/* Image Upload Field */}
           <div className="space-y-2">
-            <Label htmlFor="image" className="text-sm font-medium">
-              Image URL
-            </Label>
-            <Input
-              id="image"
-              type="url"
-              placeholder="https://example.com/image.jpg"
+            <CloudinaryImageUploader
+              mode="single"
               value={formData.image}
-              onChange={(e) => handleInputChange("image", e.target.value)}
-              disabled={isLoading}
-              className="h-10"
-              aria-invalid={!!errors.image}
+              onChange={handleImageChange}
+              onUploadingChange={setIsUploadingImage}
+              label="Category Image"
+              hint="Upload a representative image for this category (JPG, PNG, WEBP)"
+              disabled={isSubmitDisabled}
             />
             {errors.image && (
               <p className="text-xs text-destructive mt-1">
                 {errors.image}
               </p>
             )}
-            <p className="text-xs text-muted-foreground">
-              Optional. Must be a valid URL if provided.
-            </p>
           </div>
 
           {/* Form Actions */}
@@ -170,17 +193,17 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
               type="button"
               variant="outline"
               onClick={onCancel}
-              disabled={isLoading}
+              disabled={isSubmitDisabled}
               className="flex-1"
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={isSubmitDisabled}
               className="flex-1"
             >
-              {isLoading ? (
+              {isSubmitDisabled ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   {isEditing ? "Updating..." : "Creating..."}

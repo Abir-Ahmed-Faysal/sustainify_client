@@ -11,8 +11,9 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { LogOut, User, LayoutDashboard } from "lucide-react";
+import { LogOut, User, LayoutDashboard, Heart } from "lucide-react";
 
 interface UserDropdownProps {
   user: {
@@ -27,6 +28,7 @@ interface UserDropdownProps {
 
 export function UserDropdown({ user }: UserDropdownProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const handleLogout = async () => {
     try {
@@ -35,7 +37,9 @@ export function UserDropdown({ user }: UserDropdownProps) {
       });
 
       if (res.ok) {
-        // Refresh the page or redirect to home to update the auth state
+        // Clear all cached queries so navbar and other components
+        // immediately reflect the logged-out state
+        queryClient.clear();
         router.push("/login");
         router.refresh();
       }
@@ -83,6 +87,12 @@ export function UserDropdown({ user }: UserDropdownProps) {
           <Link href={dashboardHref} className="cursor-pointer w-full flex items-center">
             <LayoutDashboard className="mr-2 h-4 w-4" />
             <span>Dashboard</span>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/my-favourites" className="cursor-pointer w-full flex items-center">
+            <Heart className="mr-2 h-4 w-4" />
+            <span>My Favourites</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>

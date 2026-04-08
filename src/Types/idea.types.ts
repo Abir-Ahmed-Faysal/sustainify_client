@@ -28,6 +28,7 @@ export interface IIdea {
             avatar: string;
         };
     };
+    authorId: string;
     category: {
         id: string;
         name: string;
@@ -53,11 +54,13 @@ export interface IIdeaQuery {
     page?: number;
     limit?: number;
     searchTerm?: string;
-    category?: string;
+    categoryName?: string;
     isPaid?: boolean;
-    minVotes?: number;
-    maxVotes?: number;
-    sortBy?: "createdAt" | "totalUpVotes" | "_count.comments" | "price";
+    "totalUpVotes[gte]"?: number;
+    "totalUpVotes[lte]"?: number;
+    "price[gte]"?: number;
+    "price[lte]"?: number;
+    sortBy?: "createdAt" | "totalUpVotes" | "comments._count" | "price" | "positiveRatio,createdAt";
     sortOrder?: "asc" | "desc";
     authorId?: string;
 }

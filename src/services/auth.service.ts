@@ -1,6 +1,5 @@
 "use server"
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { envVars } from "@/config/env";
 import { setTokenInCookies } from "@/lib/tokenUtils";
 import { cookies } from "next/headers";
@@ -29,6 +28,7 @@ export async function getNewTokensWithRefreshToken(
                 "Content-Type": "application/json",
                 Cookie: `refreshToken=${refreshToken}`,
             },
+            credentials: 'include'
         });
 
         if (!res.ok) {
@@ -68,17 +68,19 @@ export async function getUserInfo() {
     try {
         const cookieStore = await cookies();
         const accessToken = cookieStore.get("accessToken")?.value;
-        const refreshToken = cookieStore.get("refreshToken")?.value
+        const refreshToken = cookieStore.get("refreshToken")?.value;
 
         if (!accessToken) {
             return null;
         }
 
+        const cookieHeader = `accessToken=${accessToken}${refreshToken ? `; refreshToken=${refreshToken}` : ''}`;
+
         const res = await fetch(`${NEXT_PUBLIC_API_BASE_URL}/auth/me`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
-                Cookie: `accessToken=${accessToken}; refreshToken=${refreshToken}`
+                Cookie: cookieHeader
             }
         });
 

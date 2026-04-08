@@ -2,13 +2,15 @@ import HeroSection from "@/components/module/home/HeroSection";
 import FeaturedIdeas from "@/components/module/home/FeaturedIdeas";
 import Testimonials from "@/components/module/home/Testimonials";
 import Newsletter from "@/components/module/home/Newsletter";
-import { prefetchIdeas } from "@/services/idea.service";
+import { getPublicIdeas } from "@/services/idea.service";
 import { prefetchCategories } from "@/services/category.service";
 import { IIdea } from "@/types/idea.types";
 import { ICategory } from "@/types/category.types";
-import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, Zap, Users, Award, TrendingUp, Lock, Share2, BarChart3, Heart } from "lucide-react";
+import { Zap, Users, Lock } from "lucide-react";
+
+// Revalidate home page every 1 hour (3600s)
+export const revalidate = 3600;
 
 // Function to get emoji for category names
 const getCategoryEmoji = (categoryName: string): string => {
@@ -44,7 +46,7 @@ export default async function Home() {
 
   try {
     // 🌍 Fetch Top 6 Approved ideas for the main featured section
-    const featuredResponse = await prefetchIdeas({
+    const featuredResponse = await getPublicIdeas({
       limit: 6,
       sortBy: "totalUpVotes",
       sortOrder: "desc",
@@ -56,7 +58,7 @@ export default async function Home() {
 
     // 🏆 Top Voted Ideas for Testimonials 
     // They are fetched using positiveRatio as the primary quality metric
-    const topVotedResponse = await prefetchIdeas({
+    const topVotedResponse = await getPublicIdeas({
       limit: 3,
       sortBy: "totalUpVotes",
       sortOrder: "desc",
@@ -83,7 +85,7 @@ export default async function Home() {
       <HeroSection categories={categories} />
       
       {/* Stats Section */}
-      <section className="py-16 bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-800">
+      <section className="py-16 bg-linear-to-r from-emerald-600 via-emerald-700 to-teal-800">
         <div className="container mx-auto px-4 md:px-6 text-center">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-12">
             <div>
@@ -155,7 +157,7 @@ export default async function Home() {
                 href={`/ideas?category=${encodeURIComponent(cat.name)}`}
                 className="flex flex-col items-center justify-center p-8 bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 hover:border-emerald-500 transition-all hover:scale-105 duration-300 shadow-sm"
               >
-                <span className="text-4xl mb-4 grayscale group-hover:grayscale-0 transition-all">{getCategoryEmoji(cat.name)}</span>
+                <span className="text-4xl mb-4 transition-all">{getCategoryEmoji(cat.name)}</span>
                 <span className="font-bold text-slate-800 dark:text-slate-200 text-sm">{cat.name}</span>
               </Link>
             ))}

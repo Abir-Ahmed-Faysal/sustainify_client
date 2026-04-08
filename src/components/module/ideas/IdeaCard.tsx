@@ -2,13 +2,11 @@ import { IIdea } from "@/types/idea.types";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Eye, Calendar, User, MessageCircle } from "lucide-react";
+import { Eye, Calendar, User, MessageCircle, ThumbsUp, ThumbsDown } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { format } from "date-fns";
 import { isValidImageUrl, getPlaceholderGradient } from "@/lib/imageUtils";
-import IdeaCardFavourite from "./IdeaCardFavourite";
-import IdeaCardVote from "./IdeaCardVote";
 
 const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -53,14 +51,14 @@ export default function IdeaCard({ idea }: IdeaCardProps) {
                 ) : (
                     <div className={`flex items-center justify-center h-full bg-linear-to-br ${placeholderGradient} group-hover:scale-110 transition-transform duration-500`}>
                         <div className="text-center">
-                            <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{category.name}</p>
+                            <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{category?.name || "Uncategorized"}</p>
                         </div>
                     </div>
                 )}
                 
                 <div className="absolute top-4 left-4 z-10">
                     <Badge variant="secondary" className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm text-emerald-700 dark:text-emerald-400 font-bold">
-                        {category.name}
+                        {category?.name || "Uncategorized"}
                     </Badge>
                 </div>
                 {isPaid && (
@@ -79,11 +77,11 @@ export default function IdeaCard({ idea }: IdeaCardProps) {
                     </CardTitle>
                 </Link>
                 <div className="flex items-center gap-2 text-xs text-slate-500 mt-2 flex-wrap">
-                   <User className="size-3" />
-                   <span>{author.name}</span>
-                   <span className="mx-1">•</span>
-                   <Calendar className="size-3" />
-                   <span>{format(new Date(createdAt), "MMM d, yyyy")}</span>
+                    <User className="size-3" />
+                    <span>{author?.name || "Anonymous"}</span>
+                    <span className="mx-1">•</span>
+                    <Calendar className="size-3" />
+                    <span>{createdAt ? format(new Date(createdAt), "MMM d, yyyy") : "No date"}</span>
                    <span className="mx-1">•</span>
                    <Badge className={`text-[10px] px-1.5 py-0.5 ${getStatusColor(status)}`}>
                        {getStatusLabel(status)}
@@ -99,26 +97,24 @@ export default function IdeaCard({ idea }: IdeaCardProps) {
 
             <CardFooter className="p-5 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-4">
-                    <IdeaCardVote 
-                        ideaId={id} 
-                        initialUpVotes={totalUpVotes} 
-                        initialDownVotes={totalDownVotes} 
-                        userVoteType={idea.userVote?.type}
-                    />
+                    {/* Display total votes (read-only) */}
+                    <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-emerald-50 dark:bg-emerald-900/20">
+                        <ThumbsUp className="size-4 text-emerald-600 dark:text-emerald-400" />
+                        <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">{totalUpVotes}</span>
+                    </div>
+                    
+                    {/* Display total comments (read-only with link to details) */}
                     <Link href={`/ideas/${id}`} className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                        <MessageCircle className="size-5" />
-                        <span className="text-sm font-bold">{_count?.comments || 0}</span>
+                        <MessageCircle className="size-4" />
+                        <span className="text-sm font-semibold">{_count?.comments || 0}</span>
                     </Link>
                 </div>
                 
-                <div className="flex items-center gap-2">
-                    <IdeaCardFavourite ideaId={id} />
-                    <Button size="sm" asChild variant="ghost" className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 group/btn">
-                        <Link href={`/ideas/${id}`} className="flex items-center gap-1">
-                            View Details <Eye className="size-4 group-hover/btn:scale-110 transition-transform" />
-                        </Link>
-                    </Button>
-                </div>
+                <Button size="sm" asChild variant="ghost" className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 group/btn">
+                    <Link href={`/ideas/${id}`} className="flex items-center gap-1">
+                        View Details <Eye className="size-4 group-hover/btn:scale-110 transition-transform" />
+                    </Link>
+                </Button>
             </CardFooter>
         </Card>
     );

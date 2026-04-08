@@ -10,40 +10,50 @@ const getCookieHeaders = async () => {
     const accessToken = cookieStore.get("accessToken")?.value;
     const refreshToken = cookieStore.get("refreshToken")?.value;
   
+    const cookieParts: string[] = [];
+    if (accessToken) cookieParts.push(`accessToken=${accessToken}`);
+    if (refreshToken) cookieParts.push(`refreshToken=${refreshToken}`);
+  
     return {
-      Cookie: `accessToken=${accessToken}; refreshToken=${refreshToken}`,
+      Cookie: cookieParts.join("; "),
     };
   };
 
 // GET: All blogs
 export const getAllBlogs = async (params: IBlogQuery = {}): Promise<ApiResponse<IBlog[]>> => {
-  const queryString = new URLSearchParams(params as any).toString();
+  const queryString = new URLSearchParams(params as Record<string, string>).toString();
   const url = `/blogs?${queryString}`;
   try {
-    const response = await httpClient.get<IBlog[]>(url);
+    const headers = await getCookieHeaders();
+    const response = await httpClient.get<IBlog[]>(url, { headers });
     return { success: true, message: "Blogs fetched successfully", data: response.data };
-  } catch (error: any) {
-    return { success: false, message: error?.message || "Failed to fetch blogs", data: [] };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to fetch blogs";
+    return { success: false, message, data: [] };
   }
 };
 
 // GET: Single blog by ID
 export const getBlogById = async (id: string): Promise<ApiResponse<IBlog | null>> => {
     try {
-      const response = await httpClient.get<IBlog>(`/blogs/${id}`);
+      const headers = await getCookieHeaders();
+      const response = await httpClient.get<IBlog>(`/blogs/${id}`, { headers });
       return { success: true, message: "Blog fetched successfully", data: response.data };
-    } catch (error: any) {
-      return { success: false, message: error?.message || "Failed to fetch blog", data: null };
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to fetch blog";
+      return { success: false, message, data: null };
     }
   };
 
 // GET: Single blog by slug
 export const getBlogBySlug = async (slug: string): Promise<ApiResponse<IBlog | null>> => {
   try {
-    const response = await httpClient.get<IBlog>(`/blogs/slug/${slug}`);
+    const headers = await getCookieHeaders();
+    const response = await httpClient.get<IBlog>(`/blogs/slug/${slug}`, { headers });
     return { success: true, message: "Blog fetched successfully", data: response.data };
-  } catch (error: any) {
-    return { success: false, message: error?.message || "Failed to fetch blog", data: null };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to fetch blog";
+    return { success: false, message, data: null };
   }
 };
 
@@ -53,8 +63,9 @@ export const createBlog = async (payload: IBlogCreate): Promise<ApiResponse<IBlo
     const headers = await getCookieHeaders();
     const response = await httpClient.post<IBlog>("/blogs", payload, { headers });
     return { success: true, message: "Blog created successfully", data: response.data };
-  } catch (error: any) {
-    return { success: false, message: error?.message || "Failed to create blog", data: null };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to create blog";
+    return { success: false, message, data: null };
   }
 };
 
@@ -64,8 +75,9 @@ export const updateBlog = async (id: string, payload: IBlogUpdate): Promise<ApiR
     const headers = await getCookieHeaders();
     const response = await httpClient.patch<IBlog>(`/blogs/${id}`, payload, { headers });
     return { success: true, message: "Blog updated successfully", data: response.data };
-  } catch (error: any) {
-    return { success: false, message: error?.message || "Failed to update blog", data: null };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to update blog";
+    return { success: false, message, data: null };
   }
 };
 
@@ -75,7 +87,8 @@ export const deleteBlog = async (id: string): Promise<ApiResponse<{ message: str
     const headers = await getCookieHeaders();
     const response = await httpClient.delete<{ message: string }>(`/blogs/${id}`, { headers });
     return { success: true, message: "Blog deleted successfully", data: response.data };
-  } catch (error: any) {
-    return { success: false, message: error?.message || "Failed to delete blog", data: null };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to delete blog";
+    return { success: false, message, data: null };
   }
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -18,20 +18,48 @@ import {
 import { toggleVote } from "@/services/vote.service";
 import { toggleFavourite } from "@/services/favourite.service";
 import { Loader2 } from "lucide-react";
+import { extractErrorMessage, extractResponseErrorMessage } from "@/lib/errorMessageExtractor";
+import { useUser } from "@/hooks/useUser";
 
 interface IdeaDetailsClientProps {
   idea: IIdea;
-  currentUserId?: string;
-  isAuthor: boolean;
+  hideAuthorInfo?: boolean;
 }
 
 export default function IdeaDetailsClient({
   idea,
-  currentUserId,
-  isAuthor,
+  hideAuthorInfo = false,
 }: IdeaDetailsClientProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { user } = useUser();
+  
+  // Ensure author is populated for my-ideas where it might not be
+  const ideaWithAuthor: IIdea = {
+    ...idea,
+    author:
+      idea.author ||
+      (user
+        ? {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            profile: {
+              avatar: user.profile?.avatar || "",
+            },
+          }
+        : undefined),
+  };
+  
+  const [mounted, setMounted] = useState(false);
+  const currentUserId = user?.id;
+  const isAuthor = currentUserId === (ideaWithAuthor.author?.id || idea.authorId);
+  
+  useEffect(() => {
+    setTimeout(() => setMounted(true), 0);
+  }, []);
+  
   const [editingComment, setEditingComment] = useState<IComment | null>(null);
   const [userUpvoteStatus, setUserUpvoteStatus] = useState<
     "upvote" | "downvote" | "none"
@@ -82,10 +110,18 @@ export default function IdeaDetailsClient({
     onSuccess: (response, type) => {
       if (response.success) {
         setUserUpvoteStatus(type === "UP" ? "upvote" : "downvote");
+        toast.success(`Vote ${type === "UP" ? "up" : "down"}voted! 👍`);
         // Invalidate idea queries to refresh vote counts
         queryClient.invalidateQueries({ queryKey: ["idea", idea.id] });
         queryClient.invalidateQueries({ queryKey: ["ideas"] });
+      } else {
+        const msg = extractResponseErrorMessage(response, "Failed to vote");
+        toast.error(msg);
       }
+    },
+    onError: (error: unknown) => {
+      const errorMsg = extractErrorMessage(error, "Failed to vote");
+      toast.error(errorMsg);
     },
   });
 
@@ -96,9 +132,22 @@ export default function IdeaDetailsClient({
       if (response.data) {
         const newStatus = response.data.action === "ADDED";
         setIsFavourited(newStatus);
+        // Show toast based on action
+        if (newStatus) {
+          toast.success("Added to favorites! ❤️");
+        } else {
+          toast.info("Removed from favorites");
+        }
         // Invalidate favourite queries
-        queryClient.invalidateQueries({ queryKey: ["myFavorites"] });
+        queryClient.invalidateQueries({ queryKey: ["myFavourites"] });
+      } else {
+        const msg = extractResponseErrorMessage(response, "Failed to toggle favorite");
+        toast.error(msg);
       }
+    },
+    onError: (error: unknown) => {
+      const errorMsg = extractErrorMessage(error, "Failed to toggle favorite");
+      toast.error(errorMsg);
     },
   });
 
@@ -113,6 +162,10 @@ export default function IdeaDetailsClient({
   const handleCommentEdit = (comment: IComment) => {
     setEditingComment(comment);
   };
+
+  const hasAlreadyCommented = comments.some(
+    (comment: IComment) => comment.authorId === currentUserId
+  );
 
   const requireAuth = (action: () => void) => {
     if (!currentUserId) {
@@ -155,8 +208,7 @@ export default function IdeaDetailsClient({
         isLoadingVote={
           toggleVoteMutation.isPending
         }
-        isLoadingFavourite={toggleFavouriteMutation.isPending}
-      />
+        isLoadingFavourite={toggleFavouriteMutation.isPending}        hideAuthorInfo={hideAuthorInfo}      />
 
       {/* Comments Section — only shown when the idea has comments enabled */}
       <div className="container mx-auto px-4 md:px-6">
@@ -168,25 +220,54 @@ export default function IdeaDetailsClient({
               </h2>
 
               {/* Comment Input — logged-in users only */}
-              {currentUserId ? (
-                <div className="mb-8">
-                  <CommentInput
-                    onSubmit={handleCommentSubmit}
-                    isLoading={createCommentMutation.isPending}
-                    editingComment={editingComment}
-                    onCancelEdit={() => setEditingComment(null)}
-                  />
-                </div>
+              {mounted ? (
+                currentUserId ? (
+                  <div className="mb-8">
+                    {hasAlreadyCommented && !editingComment ? (
+                      <div className="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 p-4 rounded-xl text-center space-y-2">
+                        <p className="text-emerald-800 dark:text-emerald-300 font-medium text-sm">
+                          You have already shared your thoughts on this idea.
+                        </p>
+                        <p className="text-emerald-600 dark:text-emerald-400 text-xs">
+                          Each member is allowed one comment per idea. You can still edit or delete your existing comment below.
+                        </p>
+                      </div>
+                    ) : (
+                      <CommentInput
+                        onSubmit={handleCommentSubmit}
+                        isLoading={createCommentMutation.isPending}
+                        editingComment={editingComment}
+                        onCancelEdit={() => setEditingComment(null)}
+                      />
+                    )}
+                  </div>
+                ) : (
+                  <div className="mb-8 text-center py-6 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                    <p className="text-slate-600 dark:text-slate-400">
+                      <a
+                        href="/login"
+                        className="text-emerald-600 hover:underline font-semibold"
+                      >
+                        Login
+                      </a>{" "}
+                      to join the conversation
+                    </p>
+                  </div>
+                )
               ) : (
                 <div className="mb-8 text-center py-6 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                   <p className="text-slate-600 dark:text-slate-400">
-                    <a href="/login" className="text-emerald-600 hover:underline font-semibold">
+                    <a
+                      href="/login"
+                      className="text-emerald-600 hover:underline font-semibold"
+                    >
                       Login
                     </a>{" "}
                     to join the conversation
                   </p>
                 </div>
               )}
+
 
               {/* Comments Display */}
               {commentsLoading ? (

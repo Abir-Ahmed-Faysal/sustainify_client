@@ -7,7 +7,7 @@ export const verifyToken = (token: string, secret: string) => {
       success: true,
       data: decoded,
     };
-  } catch (error) {
+  } catch {
     return {
       success: false,
       data: null,

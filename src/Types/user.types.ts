@@ -22,7 +22,7 @@ export interface IUserListResponse {
     total: number;
     page: number;
     limit: number;
-    totalPage: number;
+    totalPages: number;
   };
 }
 
