@@ -11,6 +11,7 @@ import {
   Filter,
   AlertCircle,
 } from "lucide-react";
+import DashboardCharts from "@/components/dashboard/DashboardCharts";
 
 import { IIdea } from "@/types/idea.types";
 import { getStats } from "@/services/stats.service";
@@ -155,47 +156,50 @@ export default function AdminDashboardPage() {
         <StatCard
           title="Total Ideas"
           value={stats.totalIdea}
-          icon={<FileText className="w-5 h-5 text-blue-600" />}
-          bgColor="bg-blue-50 dark:bg-blue-900/20"
-          textColor="bg-blue-100 dark:bg-blue-900/40"
+          icon={<FileText className="w-5 h-5 text-emerald-600" />}
+          bgColor="bg-emerald-50 dark:bg-emerald-900/20"
+          textColor="bg-emerald-100 dark:bg-emerald-900/40"
           href="/admin/dashboard/ideas?status=all"
         />
 
         <StatCard
           title="Under Review"
           value={stats.underReview}
-          icon={<AlertCircle className="w-5 h-5 text-yellow-600" />}
-          bgColor="bg-yellow-50 dark:bg-yellow-900/20"
-          textColor="bg-yellow-100 dark:bg-yellow-900/40"
+          icon={<AlertCircle className="w-5 h-5 text-emerald-600" />}
+          bgColor="bg-emerald-50 dark:bg-emerald-900/20"
+          textColor="bg-emerald-100 dark:bg-emerald-900/40"
           href="/admin/dashboard/ideas?status=under-review"
         />
 
         <StatCard
           title="Approved"
           value={stats.approved}
-          icon={<Eye className="w-5 h-5 text-green-600" />}
-          bgColor="bg-green-50 dark:bg-green-900/20"
-          textColor="bg-green-100 dark:bg-green-900/40"
+          icon={<Eye className="w-5 h-5 text-emerald-600" />}
+          bgColor="bg-emerald-50 dark:bg-emerald-900/20"
+          textColor="bg-emerald-100 dark:bg-emerald-900/40"
           href="/admin/dashboard/ideas?status=approved"
         />
 
         <StatCard
           title="Rejected"
           value={stats.rejected}
-          icon={<Filter className="w-5 h-5 text-red-600" />}
-          bgColor="bg-red-50 dark:bg-red-900/20"
-          textColor="bg-red-100 dark:bg-red-900/40"
+          icon={<Filter className="w-5 h-5 text-emerald-600" />}
+          bgColor="bg-emerald-50 dark:bg-emerald-900/20"
+          textColor="bg-emerald-100 dark:bg-emerald-900/40"
           href="/admin/dashboard/ideas?status=rejected"
         />
 
         <StatCard
           title="Paid Ideas"
           value={stats.paidIdeas}
-          icon={<BarChart3 className="w-5 h-5 text-purple-600" />}
-          bgColor="bg-purple-50 dark:bg-purple-900/20"
-          textColor="bg-purple-100 dark:bg-purple-900/40"
+          icon={<BarChart3 className="w-5 h-5 text-emerald-600" />}
+          bgColor="bg-emerald-50 dark:bg-emerald-900/20"
+          textColor="bg-emerald-100 dark:bg-emerald-900/40"
         />
       </div>
+
+      {/* Dashboard Charts */}
+      <DashboardCharts />
 
       {/* Recent Ideas */}
       <Card>

@@ -7,6 +7,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import IdeaDetails from "./IdeaDetails";
 import CommentsDisplay from "./CommentsDisplay";
 import CommentInput from "./CommentInput";
+import RelatedIdeas from "./RelatedIdeas";
+import RatingDisplay from "./RatingDisplay";
 import { IIdea } from "@/types/idea.types";
 import {
   getCommentsByIdeaId,
@@ -210,6 +212,17 @@ export default function IdeaDetailsClient({
         }
         isLoadingFavourite={toggleFavouriteMutation.isPending}        hideAuthorInfo={hideAuthorInfo}      />
 
+      {/* Community Rating Section */}
+      <div className="container mx-auto px-4 md:px-6 mb-12">
+        <div className="max-w-4xl mx-auto">
+          <RatingDisplay
+            totalUpVotes={idea.totalUpVotes || 0}
+            totalDownVotes={idea.totalDownVotes || 0}
+            totalComments={comments.length}
+          />
+        </div>
+      </div>
+
       {/* Comments Section — only shown when the idea has comments enabled */}
       <div className="container mx-auto px-4 md:px-6">
         <div className="max-w-4xl mx-auto">
@@ -293,6 +306,15 @@ export default function IdeaDetailsClient({
           )}
         </div>
       </div>
+
+      {/* Related Ideas Section */}
+      {idea.categoryId && (
+        <RelatedIdeas 
+          currentIdeaId={idea.id} 
+          categoryId={idea.categoryId}
+          categoryName={idea.category?.name}
+        />
+      )}
     </div>
   );
 }

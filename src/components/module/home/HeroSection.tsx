@@ -1,12 +1,12 @@
 "use client";
  
-import { Search, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { motion } from "motion/react"
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ICategory } from "@/types/category.types";
+import SearchSuggestions from "@/components/shared/SearchSuggestions";
 
 interface HeroSectionProps {
   categories?: ICategory[];
@@ -14,16 +14,7 @@ interface HeroSectionProps {
 
 export default function HeroSection({ categories = [] }: HeroSectionProps) {
   const router = useRouter();
-  const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-
-  const handleSearch = () => {
-    const params = new URLSearchParams();
-    if (searchTerm) params.set("searchTerm", searchTerm);
-    if (selectedCategory && selectedCategory !== "all") params.set("category", selectedCategory);
-    
-    router.push(`/ideas?${params.toString()}`);
-  };
 
   return (
     <section className="relative w-full h-[650px] flex items-center overflow-hidden">
@@ -65,43 +56,40 @@ export default function HeroSection({ categories = [] }: HeroSectionProps) {
             Join thousands of eco-warriors sharing high-impact solutions.
           </p>
  
-          <div className="pt-4">
-            <div className="flex flex-col md:flex-row gap-3 p-2 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 max-w-2xl shadow-2xl">
-              <div className="relative flex-grow flex items-center px-4 py-3 bg-white rounded-xl group transition-all">
-                <Search className="text-slate-400 group-focus-within:text-emerald-600 mr-2 h-5 w-5 transition-colors" />
-                <input
-                  type="text"
-                  placeholder="Search solutions..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                  className="w-full bg-transparent outline-none text-slate-800 placeholder:text-slate-400 text-sm md:text-base font-medium"
-                />
-              </div>
-              <div className="relative flex-grow md:max-w-[180px] items-center px-4 py-3 bg-white rounded-xl hidden md:flex">
-                <MapPin className="text-slate-400 mr-2 h-5 w-5" />
-                <select 
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full bg-transparent outline-none text-slate-700 text-sm appearance-none cursor-pointer font-medium"
-                >
-                  <option value="all">All Categories</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.name}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <Button 
-                onClick={handleSearch}
-                size="lg" 
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl px-10 h-auto shadow-[0_0_20px_rgba(16,185,129,0.2)] transition-all"
-              >
-                Explore
-              </Button>
-            </div>
+          {/* AI-Powered Search */}
+          <div className="pt-4 max-w-2xl">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <SearchSuggestions />
+            </motion.div>
           </div>
+
+          {/* CTA Buttons */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="flex flex-col sm:flex-row gap-4"
+          >
+            <Button 
+              asChild
+              size="lg" 
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl px-8 shadow-[0_0_20px_rgba(16,185,129,0.2)] transition-all"
+            >
+              <a href="/ideas">Explore Ideas</a>
+            </Button>
+            <Button 
+              asChild
+              variant="outline"
+              size="lg" 
+              className="bg-white/10 hover:bg-white/20 border-white/30 text-white font-bold rounded-xl px-8 transition-all"
+            >
+              <a href="/register">Create Idea</a>
+            </Button>
+          </motion.div>
         </div>
       </div>
     </section>

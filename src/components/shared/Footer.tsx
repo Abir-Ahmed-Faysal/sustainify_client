@@ -55,6 +55,7 @@ export default function Footer() {
               {[
                 { label: "Browse Ideas", target: "/ideas" },
                 { label: "Our Mission", target: "/about" },
+                { label: "Help & FAQ", target: "/help" },
                 { label: "Eco Blog", target: "/blog" },
                 { label: "Contact Us", target: "/contact" },
                 { label: "Join Community", target: "/register" }

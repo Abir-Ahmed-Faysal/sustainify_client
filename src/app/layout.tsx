@@ -4,6 +4,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Toaster } from "sonner";
 import QueryProviders from "@/providers/QueryProvider";
+import ThemeProvider from "@/providers/ThemeProvider";
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
@@ -37,12 +38,14 @@ export default async function RootLayout({
       lang="en"
       className={cn("antialiased", geistSans.variable, geistMono.variable, "font-sans", inter.variable)}
     >
-      <body className="min-h-screen flex flex-col bg-background text-foreground selection:bg-emerald-100 selection:text-emerald-900">
-        <QueryProviders>
-          <HydrationBoundary state={dehydrate(queryClient)}>
-            {children}
-          </HydrationBoundary>
-        </QueryProviders>
+      <body className="min-h-screen flex flex-col bg-background text-foreground selection:bg-emerald-100 selection:text-emerald-900 dark:bg-slate-950 dark:text-slate-50">
+        <ThemeProvider>
+          <QueryProviders>
+            <HydrationBoundary state={dehydrate(queryClient)}>
+              {children}
+            </HydrationBoundary>
+          </QueryProviders>
+        </ThemeProvider>
         <Toaster richColors position="top-center" />
       </body>
     </html>

@@ -18,7 +18,7 @@ export default function BlogCard({ blog }: BlogCardProps) {
 
   return (
     <Card className="group overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-300">
-      <Link href={`/blog/${slug}`} className="block relative h-52 w-full overflow-hidden bg-emerald-50">
+      <Link href={`/blog/${slug}`} className="block relative h-48 w-full overflow-hidden bg-emerald-50">
         {isValidImage ? (
           <Image
             src={image!}

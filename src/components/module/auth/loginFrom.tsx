@@ -224,6 +224,22 @@ const LoginForm = ({ redirectPath }: LoginFormProps) => {
               Google Account
             </Button>
           </motion.div>
+
+          <motion.div variants={itemVariants} className="pt-4">
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full h-11 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors shadow-sm"
+              onClick={() => {
+                form.setFieldValue('email', 'demo@sustainify.com');
+                form.setFieldValue('password', 'Demo@1234');
+                toast.success('Demo credentials filled. Click Log In to continue.');
+              }}
+              disabled={redirecting}
+            >
+              Try Demo Account
+            </Button>
+          </motion.div>
         </CardContent>
 
         <CardFooter className="justify-center py-4 bg-slate-50/50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-800">

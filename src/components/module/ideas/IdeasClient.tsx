@@ -6,7 +6,8 @@ import { IIdeaQuery, IIdea } from "@/types/idea.types";
 import IdeaCard from "./IdeaCard";
 import IdeasFilters from "./IdeasFilters";
 import Pagination from "@/components/shared/Pagination";
-import { Loader2, LightbulbOff } from "lucide-react";
+import CardSkeleton from "@/components/shared/CardSkeleton";
+import { LightbulbOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface IdeasClientProps {
@@ -50,8 +51,10 @@ export default function IdeasClient({ queryParams }: IdeasClientProps) {
       <IdeasFilters />
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-40">
-          <Loader2 className="size-10 text-emerald-500 animate-spin" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <CardSkeleton key={i} />
+          ))}
         </div>
       ) : ideas.length > 0 ? (
         <>

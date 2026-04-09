@@ -2,10 +2,15 @@ import HeroSection from "@/components/module/home/HeroSection";
 import FeaturedIdeas from "@/components/module/home/FeaturedIdeas";
 import Testimonials from "@/components/module/home/Testimonials";
 import Newsletter from "@/components/module/home/Newsletter";
+import RecommendationsSection from "@/components/module/home/RecommendationsSection";
+import FAQSection from "@/components/module/home/FAQSection";
+import CTASection from "@/components/module/home/CTASection";
 import { getPublicIdeas } from "@/services/idea.service";
 import { prefetchCategories } from "@/services/category.service";
+import { getStats } from "@/services/stats.service";
 import { IIdea } from "@/types/idea.types";
 import { ICategory } from "@/types/category.types";
+import { DashboardStats, IMemberStats } from "@/types/stats.types";
 import Link from "next/link";
 import { Zap, Users, Lock } from "lucide-react";
 
@@ -43,6 +48,7 @@ export default async function Home() {
   let featuredIdeas: IIdea[] = [];
   let topVotedIdeas: IIdea[] = []; // These are actually sorted by positiveRatio as required
   let categories: ICategory[] = [];
+  let stats: (DashboardStats | IMemberStats | null) = null;
 
   try {
     // 🌍 Fetch Top 6 Approved ideas for the main featured section
@@ -80,6 +86,16 @@ export default async function Home() {
     console.error("Error fetching categories:", error);
   }
 
+  try {
+    // Fetch real stats data
+    const statsResponse = await getStats();
+    if (statsResponse.success && statsResponse.data) {
+      stats = statsResponse.data;
+    }
+  } catch (error) {
+    console.error("Error fetching stats:", error);
+  }
+
   return (
     <div className="flex flex-col w-full">
       <HeroSection categories={categories} />
@@ -89,19 +105,27 @@ export default async function Home() {
         <div className="container mx-auto px-4 md:px-6 text-center">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-12">
             <div>
-              <div className="text-5xl font-extrabold text-white mb-2 tracking-tighter">5,000+</div>
+              <div className="text-5xl font-extrabold text-white mb-2 tracking-tighter">
+                {stats && 'totalUsers' in stats ? stats.totalUsers?.toLocaleString() : "5,000"}+
+              </div>
               <p className="text-emerald-100 text-sm font-medium uppercase tracking-widest opacity-80">Impactful Members</p>
             </div>
             <div>
-              <div className="text-5xl font-extrabold text-white mb-2 tracking-tighter">1,200+</div>
+              <div className="text-5xl font-extrabold text-white mb-2 tracking-tighter">
+                {stats && 'totalIdeas' in stats ? stats.totalIdeas?.toLocaleString() : "1,200"}+
+              </div>
               <p className="text-emerald-100 text-sm font-medium uppercase tracking-widest opacity-80">Shared Solutions</p>
             </div>
             <div>
-              <div className="text-5xl font-extrabold text-white mb-2 tracking-tighter">50+</div>
+              <div className="text-5xl font-extrabold text-white mb-2 tracking-tighter">
+                {categories.length || "50"}+
+              </div>
               <p className="text-emerald-100 text-sm font-medium uppercase tracking-widest opacity-80">Global Sectors</p>
             </div>
             <div>
-              <div className="text-5xl font-extrabold text-white mb-2 tracking-tighter">80%</div>
+              <div className="text-5xl font-extrabold text-white mb-2 tracking-tighter">
+                {stats && 'approvalRate' in stats ? Math.round((Number(stats.approvalRate) || 80) * 100) / 100 : "80"}%
+              </div>
               <p className="text-emerald-100 text-sm font-medium uppercase tracking-widest opacity-80">Positive Accuracy</p>
             </div>
           </div>
@@ -164,6 +188,12 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      <RecommendationsSection />
+
+      <CTASection />
+
+      <FAQSection />
 
       <Newsletter />
     </div>

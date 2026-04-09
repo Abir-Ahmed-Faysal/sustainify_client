@@ -8,10 +8,12 @@ import { Menu, X, Leaf, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { UserDropdown } from "./UserDropdown";
 import { useUser } from "@/hooks/useUser";
+import DarkModeToggle from "./DarkModeToggle";
 
 const navLinks = [
   { name: "Home", href: "/" },
   { name: "Ideas", href: "/ideas" },
+  { name: "Trending", href: "/trending" },
   { name: "About Us", href: "/about-us" },
   { name: "Blog", href: "/blog" },
 ];
@@ -22,7 +24,7 @@ export default function Navbar() {
   const { user, isLoading } = useUser();
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-md">
+    <nav className="sticky top-0 z-50 w-full border-b bg-white/80 dark:bg-slate-900/80 backdrop-blur-md dark:border-slate-700">
       <div className="container mx-auto px-4 md:px-6">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-2">
@@ -51,6 +53,7 @@ export default function Navbar() {
           </div>
 
           <div className="hidden md:flex items-center gap-4">
+            <DarkModeToggle />
             {isLoading ? (
               <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
             ) : user ? (
@@ -79,7 +82,7 @@ export default function Navbar() {
 
       {/* Mobile Nav */}
       {isOpen && (
-        <div className="md:hidden border-t bg-white p-4 space-y-4 shadow-lg animate-in fade-in slide-in-from-top-4 duration-300">
+        <div className="md:hidden border-t bg-white dark:bg-slate-900 p-4 space-y-4 shadow-lg animate-in fade-in slide-in-from-top-4 duration-300">
           <div className="flex flex-col gap-4">
             {navLinks.map((link) => (
               <Link
@@ -88,31 +91,32 @@ export default function Navbar() {
                 onClick={() => setIsOpen(false)}
                 className={cn(
                   "text-base font-medium transition-colors hover:text-emerald-600",
-                  pathname === link.href ? "text-emerald-600 font-bold" : "text-gray-600"
+                  pathname === link.href ? "text-emerald-600 font-bold" : "text-gray-600 dark:text-gray-300"
                 )}
               >
                 {link.name}
               </Link>
             ))}
           </div>
-          <div className="flex flex-col gap-2 pt-4 border-t">
+          <div className="flex items-center justify-between pt-4 border-t">
+            <DarkModeToggle />
             {isLoading ? (
               <div className="flex justify-center py-2">
                 <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
               </div>
             ) : user ? (
-              <div className="flex justify-start px-2 py-2">
+              <div className="flex justify-start">
                 <UserDropdown user={user} />
               </div>
             ) : (
-              <>
-                <Button variant="outline" asChild className="w-full">
+              <div className="flex gap-2">
+                <Button variant="outline" asChild size="sm">
                   <Link href="/login">Login</Link>
                 </Button>
-                <Button asChild className="w-full bg-emerald-600 hover:bg-emerald-700">
-                  <Link href="/register">Join Now</Link>
+                <Button asChild size="sm" className="bg-emerald-600 hover:bg-emerald-700">
+                  <Link href="/register">Join</Link>
                 </Button>
-              </>
+              </div>
             )}
           </div>
         </div>
