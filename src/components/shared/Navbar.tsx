@@ -14,6 +14,7 @@ const navLinks = [
   { name: "Home", href: "/" },
   { name: "Ideas", href: "/ideas" },
   { name: "Trending", href: "/trending" },
+  { name: "Chatbot", href: "/chatbot" },
   { name: "About Us", href: "/about-us" },
   { name: "Blog", href: "/blog" },
 ];
@@ -30,7 +31,7 @@ export default function Navbar() {
           <div className="flex items-center gap-2">
             <Link href="/" className="flex items-center gap-1">
               <Leaf className="h-6 w-6 text-emerald-600" />
-              <span className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-indigo-600 bg-clip-text text-transparent">
+              <span className="text-xl font-bold bg-linear-to-r from-emerald-600 to-indigo-600 bg-clip-text text-transparent">
                 Sustainify
               </span>
             </Link>

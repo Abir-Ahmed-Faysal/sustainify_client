@@ -73,7 +73,10 @@ const LoginForm = ({ redirectPath }: LoginFormProps) => {
         setRedirecting(true);
       } catch (error: any) {
         // Ignore Next.js redirect errors - they're expected and not real errors
-        if (error?.message === "NEXT_REDIRECT" || error?.digest?.startsWith("NEXT_REDIRECT")) {
+        if (
+          error?.message === "NEXT_REDIRECT" ||
+          error?.digest?.startsWith("NEXT_REDIRECT")
+        ) {
           setRedirecting(true);
           return;
         }
@@ -162,7 +165,10 @@ const LoginForm = ({ redirectPath }: LoginFormProps) => {
 
             {serverError && !redirecting && (
               <motion.div variants={itemVariants}>
-                <Alert variant={"destructive"} className="bg-destructive/10 text-destructive border-destructive/20">
+                <Alert
+                  variant={"destructive"}
+                  className="bg-destructive/10 text-destructive border-destructive/20"
+                >
                   <AlertDescription>{serverError}</AlertDescription>
                 </Alert>
               </motion.div>
@@ -175,7 +181,9 @@ const LoginForm = ({ redirectPath }: LoginFormProps) => {
                 {([canSubmit, isSubmitting]) => (
                   <AppSubmitButton
                     isPending={isSubmitting || isPending || redirecting}
-                    pendingLabel={redirecting ? "Redirecting..." : "Authenticating..."}
+                    pendingLabel={
+                      redirecting ? "Redirecting..." : "Authenticating..."
+                    }
                     disabled={!canSubmit || redirecting}
                     className="h-11 rounded-xl shadow-lg shadow-emerald-600/20 active:scale-[0.98] transition-all bg-emerald-600 hover:bg-emerald-700"
                   >
@@ -201,7 +209,9 @@ const LoginForm = ({ redirectPath }: LoginFormProps) => {
             <Button
               variant="outline"
               className="w-full h-11 rounded-xl border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors shadow-sm"
-              onClick={() => toast.error('Google Sign-in currently unavailable')}
+              onClick={() =>
+                toast.error("Google Sign-in currently unavailable")
+              }
             >
               <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
                 <path
@@ -231,19 +241,42 @@ const LoginForm = ({ redirectPath }: LoginFormProps) => {
               variant="secondary"
               className="w-full h-11 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors shadow-sm"
               onClick={() => {
-                form.setFieldValue('email', 'demo@sustainify.com');
-                form.setFieldValue('password', 'Demo@1234');
-                toast.success('Demo credentials filled. Click Log In to continue.');
+                form.setFieldValue("email", "fr.abir.ahmed.faysal@gmail.com");
+                form.setFieldValue("password", "Ae100ae100@");
+                toast.success(
+                  "Demo credentials filled. Click Log In to continue.",
+                );
               }}
               disabled={redirecting}
             >
-              Try Demo Account
+              Try Demo admin Account
+            </Button>
+          </motion.div>
+
+          <motion.div variants={itemVariants} className="pt-4">
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full h-11 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors shadow-sm"
+              onClick={() => {
+                form.setFieldValue("email", "m@gmail.com");
+                form.setFieldValue("password", "Ae100ae100@");
+                toast.success(
+                  "Demo credentials filled. Click Log In to continue.",
+                );
+              }}
+              disabled={redirecting}
+            >
+              Try Demo member Account
             </Button>
           </motion.div>
         </CardContent>
 
         <CardFooter className="justify-center py-4 bg-slate-50/50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-800">
-          <motion.p variants={itemVariants} className="text-sm text-slate-600 dark:text-slate-400">
+          <motion.p
+            variants={itemVariants}
+            className="text-sm text-slate-600 dark:text-slate-400"
+          >
             Don&apos;t have an account?{" "}
             <Link
               href={`/register${redirectPath ? `?redirect=${encodeURIComponent(redirectPath)}` : ""}`}
@@ -263,7 +296,9 @@ const LoginForm = ({ redirectPath }: LoginFormProps) => {
               <div className="absolute inset-0 border-4 border-emerald-200/30 rounded-full"></div>
               <div className="absolute inset-0 border-4 border-transparent border-t-emerald-500 rounded-full animate-spin"></div>
             </div>
-            <p className="text-sm font-medium text-white">Redirecting to dashboard...</p>
+            <p className="text-sm font-medium text-white">
+              Redirecting to dashboard...
+            </p>
           </div>
         </div>
       )}

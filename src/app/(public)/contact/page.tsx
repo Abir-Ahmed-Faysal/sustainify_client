@@ -1,5 +1,3 @@
-import Navbar from "@/components/shared/Navbar";
-import Footer from "@/components/shared/Footer";
 import ContactForm from "@/components/module/contact/ContactForm";
 import { motion } from "framer-motion";
 
@@ -11,19 +9,18 @@ export const metadata = {
 
 export default function ContactPage() {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
-      <Navbar />
-
+    <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4">
+      <section className="pt-20 pb-20 px-4">
         <div className="container mx-auto max-w-4xl">
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight bg-gradient-to-br from-emerald-600 to-teal-700 bg-clip-text text-transparent mb-4">
-              We `&apos;`re Here to Help
+              We&apos;re Here to Help
             </h1>
             <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-              Have a question about Sustainify? Want to share an idea or provide feedback? 
-              Reach out to our team and we `&apos;`ll get back to you as soon as possible.
+              Have a question about Sustainify? Want to share an idea or provide
+              feedback? Reach out to our team and we&apos;ll get back to you as
+              soon as possible.
             </p>
           </div>
 
@@ -115,8 +112,6 @@ export default function ContactPage() {
           </div>
         </div>
       </section>
-
-      <Footer />
-    </main>
+    </div>
   );
 }
